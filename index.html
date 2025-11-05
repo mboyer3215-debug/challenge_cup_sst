@@ -3411,6 +3411,21 @@ function startListeningToCommands() {
             }, 2000);
         }
 
+        // Écouter les commandes de reprise pour chaque étape
+        if (command.type && command.type.startsWith('resume_from_stage_') && command.timestamp > (Date.now() - 5000)) {
+            console.log('▶️ Commande de reprise reçue:', command.type);
+            gamePaused = false;
+            currentStage = 0;
+
+            // Retourner immédiatement à l'écran des coffres
+            showScreen('boxes-screen');
+            renderBoxes();
+
+            // Afficher un message de confirmation
+            showCustomAlert('▶️ Le superviseur a repris le jeu ! Vous pouvez continuer.');
+        }
+
+        // Commande générique de reprise (pour compatibilité)
         if (command.type === 'resume_game' && command.timestamp > (Date.now() - 5000)) {
             console.log('▶️ Commande resume_game reçue !');
             gamePaused = false;
@@ -3692,8 +3707,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     // Marquer cette étape comme non pausée
                     database.ref(`sessions/${sessionId}/stages/stage${i}/paused`).set(false);
 
-                    // Envoyer une commande pour reprendre le jeu
-                    sendCommand('resume_game');
+                    // Envoyer une commande SPÉCIFIQUE pour reprendre depuis cette étape
+                    const resumeCommand = `resume_from_stage_${i}`;
+                    console.log(`📤 Envoi de la commande: ${resumeCommand}`);
+                    sendCommand(resumeCommand);
 
                     showCustomAlert(`▶️ Jeu repris ! Les équipes peuvent continuer vers l'étape ${i + 1}.`);
 
@@ -5884,11 +5901,13 @@ function unlockBox() {
         if (gameState.boxesUnlocked >= boxesData.length) {
             endGame();
         } else if (stageCompleted && gameState.boxesUnlocked < 8) {
-            // Une étape vient d'être complétée - afficher directement l'écran de pause
-            // (sans attendre Firebase pour une meilleure expérience utilisateur)
-            console.log(`⏸️ Étape ${stageNumber} complétée, affichage de l'écran de pause`);
+            // Une étape vient d'être complétée
+            console.log(`⏸️ Étape ${stageNumber} complétée, blocage local et notification superviseur`);
             gamePaused = true;
             currentStage = stageNumber;
+
+            // Envoyer une COMMANDE pour notifier le superviseur
+            sendCommand(`stage_${stageNumber}_completed`);
 
             // Attendre un peu que Firebase se synchronise
             setTimeout(() => {
