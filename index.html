@@ -232,7 +232,7 @@
         <!-- Écran d'authentification par mot de passe -->
         <div id="auth-screen" class="max-w-md mx-auto">
             <div class="text-center mb-8 bounce-in">
-                <div class="text-8xl mb-6">👨🏫</div>
+                <div class="text-8xl mb-6">👨‍🏫</div>
                 <h1 class="text-4xl md:text-5xl font-bold text-primary mb-4">Accès Superviseur</h1>
                 <p class="text-lg text-gray-700 dark:text-gray-300">Chasse au Trésor SST</p>
             </div>
@@ -282,7 +282,7 @@
 
             <div class="max-w-md mx-auto mb-6">
                 <div class="glass-morphism rounded-3xl shadow-2xl p-8 text-center bounce-in" style="animation-delay: 0.2s">
-                    <div class="text-6xl mb-4">👨🏫</div>
+                    <div class="text-6xl mb-4">👨‍🏫</div>
                     <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Superviseur</h2>
                     <p class="text-gray-600 dark:text-gray-400 mb-6">Suivez la progression de tous les groupes en temps réel</p>
                     <button id="supervisor-btn" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xl font-bold py-4 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all">
@@ -327,7 +327,7 @@
         <!-- Tableau de bord Superviseur -->
         <div id="supervisor-screen" class="hidden max-w-full mx-auto">
             <div class="text-center mb-6">
-                <h1 class="text-4xl md:text-5xl font-bold text-primary neon-text mb-2">👨🏫 Tableau de Bord Superviseur</h1>
+                <h1 class="text-4xl md:text-5xl font-bold text-primary neon-text mb-2">👨‍🏫 Tableau de Bord Superviseur</h1>
                 <p class="text-lg text-gray-600 dark:text-gray-400">Progression en temps réel</p>
                 <div class="mt-4 flex flex-wrap justify-center gap-3">
                     <button id="back-to-login-supervisor" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-all">
@@ -336,7 +336,7 @@
                     <button id="stop-all-games-btn" class="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-all">
                         ⏸️ Arrêter le Jeu
                     </button>
-                    <button id="reset-all-btn" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all">
+                    <button id="reset-all-btn" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all" onclick="resetAllData()">
                         🔄 Réinitialiser Tout
                     </button>
                     <button id="admin-mode-btn" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all">
@@ -464,6 +464,31 @@
                 <button id="restart-btn" class="bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white text-3xl font-bold py-8 px-16 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 glow">
                     🔄 Recommencer l'Aventure
                 </button>
+            </div>
+        </div>
+
+        <!-- Écran de pause d'étape -->
+        <div id="stage-pause-screen" class="hidden max-w-5xl mx-auto text-center">
+            <div class="glass-morphism rounded-3xl shadow-2xl p-8 md:p-12 bounce-in">
+                <div class="text-8xl mb-6">⏸️</div>
+                <h1 class="text-5xl md:text-6xl font-bold text-primary neon-text mb-6">Étape <span id="stage-number">1</span> Complétée !</h1>
+                <p class="text-2xl text-gray-700 dark:text-gray-300 mb-8">Le jeu est en pause. Attendez que le superviseur reprenne le jeu.</p>
+
+                <div class="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white rounded-2xl p-10 mb-8 shadow-2xl">
+                    <div class="text-5xl font-bold mb-3">🏆 <span id="first-team-name">Équipe</span></div>
+                    <div class="text-2xl font-semibold">Première équipe à compléter cette étape !</div>
+                </div>
+
+                <div id="stage-rankings" class="bg-white dark:bg-gray-800 rounded-2xl p-6 mb-8 shadow-lg">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-800 dark:text-white">📊 Classement de l'étape</h2>
+                    <div id="stage-rankings-list" class="space-y-3">
+                        <!-- Classement sera ajouté ici -->
+                    </div>
+                </div>
+
+                <div class="text-lg text-gray-600 dark:text-gray-400 animate-pulse">
+                    ⏳ En attente de la reprise par le superviseur...
+                </div>
             </div>
         </div>
 
@@ -809,14 +834,56 @@ const firebaseConfig = {
   appId: "1:57462613537:web:6178195b2f4f08fbaa2560"
 };
 
-// Initialiser Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+// Variables Firebase
+let database = null;
+// Session ID global partagé par toutes les équipes d'une même formation
+// Utilisé pour coordonner les étapes entre équipes
+let sessionId = 'formation_' + new Date().toISOString().split('T')[0]; // Format: formation_2025-01-15
+
+// Initialiser Firebase (après le chargement de la page)
+function initializeFirebase() {
+    try {
+        if (typeof firebase === 'undefined') {
+            console.error('❌ Firebase SDK non chargé. Vérifiez votre connexion internet.');
+            console.error('⚠️ Le système d\'étapes ne fonctionnera pas sans Firebase !');
+
+            // Afficher un avertissement à l'utilisateur
+            setTimeout(() => {
+                showCustomAlert('⚠️ ATTENTION: Firebase n\'est pas disponible. Le système d\'étapes multijoueur ne fonctionnera pas. Utilisez le mode local uniquement.');
+            }, 2000);
+
+            return false;
+        }
+
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        console.log('✅ Firebase initialisé avec succès');
+        console.log('🆔 Session de formation:', sessionId);
+        console.log('🔗 Database URL:', firebaseConfig.databaseURL);
+
+        // Test de connexion
+        database.ref('.info/connected').on('value', (snapshot) => {
+            if (snapshot.val() === true) {
+                console.log('🌐 Connecté à Firebase en temps réel');
+            } else {
+                console.log('📡 Déconnecté de Firebase');
+            }
+        });
+
+        return true;
+    } catch (error) {
+        console.error('❌ Erreur d\'initialisation Firebase:', error);
+        console.error('⚠️ Le système d\'étapes ne fonctionnera pas sans Firebase !');
+
+        setTimeout(() => {
+            showCustomAlert('⚠️ ERREUR: Impossible de se connecter à Firebase. Le système d\'étapes multijoueur ne fonctionnera pas.');
+        }, 2000);
+
+        return false;
+    }
+}
 
 // ==================== SYSTÈME MULTIJOUEUR ====================
-
-// ID unique pour cette session
-const sessionId = 'team_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
 // État global du mode
 let appMode = 'login'; // 'login', 'supervisor', 'player'
@@ -824,6 +891,25 @@ let currentTeamName = '';
 
 // Stockage des équipes (pour le superviseur)
 let teams = {};
+
+// SYSTÈME D'ÉTAPES (4 étapes de 2 coffres chacune)
+let currentStage = 1; // Étape actuelle (1 à 4)
+let gamePaused = false; // Le jeu est-il en pause ?
+let stageWinners = {
+    stage1: null,
+    stage2: null,
+    stage3: null,
+    stage4: null
+};
+
+// Fonction pour calculer l'étape en fonction des coffres déverrouillés
+function getStageFromBoxes(boxesUnlocked) {
+    if (boxesUnlocked >= 8) return 4;
+    if (boxesUnlocked >= 6) return 3;
+    if (boxesUnlocked >= 4) return 2;
+    if (boxesUnlocked >= 2) return 1;
+    return 0; // Pas encore d'étape complétée
+}
 
 // Audio Context pour les sons
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -2307,13 +2393,6 @@ const boxesData = [
                     points: 130
                 },
                 {
-                    type: 'draw',
-                    title: 'Partie 6 - Pictogramme 15',
-                    question: 'Dessinez le symbole/pictogramme du SAMU (15)',
-                    timeLimit: 60,
-                    points: 100
-                },
-                {
                     type: 'matching',
                     title: 'Partie 6 - Situations et numéros',
                     question: 'Associez chaque situation au numéro approprié :',
@@ -3262,12 +3341,16 @@ function broadcastUpdate() {
         gameState.boxesUnlocked = 0;
     }
 
+    // Calculer l'étape actuelle de l'équipe
+    const teamStage = getStageFromBoxes(gameState.boxesUnlocked);
+
     const update = {
         type: 'team_update',
         sessionId: sessionId,
         teamName: currentTeamName,
         boxesUnlocked: gameState.boxesUnlocked,
         totalScore: gameState.totalScore,
+        currentStage: teamStage,
         isFinished: gameState.boxesUnlocked >= boxesData.length,
         finishTime: gameState.stats.endTime || null,
         stats: {
@@ -3320,6 +3403,108 @@ function startListeningToCommands() {
                 document.getElementById('team-name-input').value = '';
             }, 2000);
         }
+
+        // Écouter les commandes de reprise pour chaque étape
+        if (command.type && command.type.startsWith('resume_from_stage_') && command.timestamp > (Date.now() - 5000)) {
+            console.log('▶️ Commande de reprise reçue:', command.type);
+            gamePaused = false;
+            currentStage = 0;
+
+            // Retourner immédiatement à l'écran des coffres
+            showScreen('boxes-screen');
+            renderBoxes();
+
+            // Afficher un message de confirmation
+            showCustomAlert('▶️ Le superviseur a repris le jeu ! Vous pouvez continuer.');
+        }
+
+        // Commande générique de reprise (pour compatibilité)
+        if (command.type === 'resume_game' && command.timestamp > (Date.now() - 5000)) {
+            console.log('▶️ Commande resume_game reçue !');
+            gamePaused = false;
+            currentStage = 0;
+
+            // Retourner immédiatement à l'écran des coffres
+            showScreen('boxes-screen');
+            renderBoxes();
+
+            // Afficher un message de confirmation
+            showCustomAlert('▶️ Le superviseur a repris le jeu ! Vous pouvez continuer.');
+        }
+    });
+}
+
+// Écouter les changements d'état des étapes (pour les joueurs)
+function startListeningToStages() {
+    if (!sessionId || !database) {
+        console.warn('⚠️ startListeningToStages: sessionId ou database manquant');
+        return;
+    }
+
+    const stagesPath = `sessions/${sessionId}/stages`;
+    console.log(`👂 Écoute des changements Firebase sur: ${stagesPath}`);
+
+    database.ref(stagesPath).on('value', (snapshot) => {
+        if (appMode !== 'player') {
+            console.log('⏭️ Mode non-joueur, ignoré');
+            return;
+        }
+
+        const stages = snapshot.val();
+        console.log('📡 Mise à jour Firebase reçue - étapes:', stages);
+
+        const wasPaused = gamePaused;
+
+        // Si pas de données, débloquer le jeu
+        if (!stages) {
+            console.log('📭 Aucune donnée d\'étape dans Firebase');
+            if (gamePaused) {
+                gamePaused = false;
+                currentStage = 0;
+                console.log('🔓 Aucune étape en pause - jeu débloqué');
+                // Rafraîchir l'affichage des coffres
+                renderBoxes();
+            }
+            return;
+        }
+
+        // Vérifier si le jeu est en pause sur l'une des étapes
+        let foundPause = false;
+        for (let i = 1; i <= 4; i++) {
+            const stage = stages[`stage${i}`];
+            if (stage && stage.paused) {
+                foundPause = true;
+                console.log(`🔍 Étape ${i} trouvée en pause:`, stage);
+                // Le jeu est en pause pour cette étape
+                if (!gamePaused || currentStage !== i) {
+                    gamePaused = true;
+                    currentStage = i;
+                    console.log(`⏸️ Activation de la pause pour l'étape ${i}`);
+                    showStagePauseScreen(i, stage);
+                }
+                return;
+            }
+        }
+
+        // Aucune étape en pause
+        if (!foundPause && gamePaused) {
+            gamePaused = false;
+            currentStage = 0;
+            console.log('▶️ Jeu repris via Firebase - déblocage des coffres');
+
+            // Si on était sur l'écran de pause, retourner à l'écran des coffres
+            const pauseScreen = document.getElementById('stage-pause-screen');
+            if (pauseScreen && !pauseScreen.classList.contains('hidden')) {
+                console.log('🔄 Retour à l\'écran des coffres depuis l\'écran de pause');
+                showScreen('boxes-screen');
+            }
+
+            // Rafraîchir l'affichage des coffres pour débloquer les suivants
+            console.log('🔄 Rafraîchissement des coffres');
+            renderBoxes();
+        } else if (!foundPause) {
+            console.log('✅ Aucune étape en pause actuellement');
+        }
     });
 }
 
@@ -3347,7 +3532,14 @@ function generateQRCode() {
     qrContainer.innerHTML = ''; // Clear existing
 
     // Créer l'URL avec le paramètre mode=player pour l'accès joueur
-    const url = new URL(window.location.href);
+    let baseUrl = window.location.href;
+
+    // Si on est en local (file://), utiliser l'URL de votre GitHub Pages
+    if (baseUrl.startsWith('file://')) {
+        baseUrl = 'https://mboyer3215-debug.github.io/challenge_cup_sst/';
+    }
+
+    const url = new URL(baseUrl);
     url.searchParams.set('mode', 'player');
 
     new QRCode(qrContainer, {
@@ -3361,6 +3553,9 @@ function generateQRCode() {
 
 // Initialisation au chargement
 window.addEventListener('DOMContentLoaded', () => {
+    // Initialiser Firebase en premier
+    initializeFirebase();
+
     generateQRCode();
 
     // Vérifier l'authentification et afficher l'écran approprié
@@ -3370,6 +3565,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('supervisor-btn').addEventListener('click', () => {
         playSound('tick');
         appMode = 'supervisor';
+
         showScreen('supervisor-screen');
         loadTeamsFromFirebase();
 
@@ -3480,14 +3676,26 @@ window.addEventListener('DOMContentLoaded', () => {
         );
     });
 
-    // Bouton Réinitialiser tout (Superviseur)
-    document.getElementById('reset-all-btn').addEventListener('click', () => {
+    // Fonction globale de réinitialisation (appelée par onclick)
+    window.resetAllData = function() {
+        console.log('🔄 resetAllData() appelée');
+
         showConfirmDialog(
             '🔄 Voulez-vous vraiment réinitialiser toutes les données ? Cette action est irréversible !',
             () => {
+                console.log('✅ Confirmation de réinitialisation');
                 playSound('tick');
+
                 // Effacer toutes les données Firebase
-                database.ref('teams').remove();
+                if (database) {
+                    database.ref('teams').remove()
+                        .then(() => console.log('✅ Équipes supprimées de Firebase'))
+                        .catch(err => console.error('❌ Erreur suppression équipes:', err));
+
+                    database.ref('sessions').remove()
+                        .then(() => console.log('✅ Sessions supprimées de Firebase'))
+                        .catch(err => console.error('❌ Erreur suppression sessions:', err));
+                }
 
                 // Réinitialiser l'objet teams
                 teams = {};
@@ -3497,12 +3705,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 // Mettre à jour l'affichage
                 updateSupervisorDisplay();
-                document.getElementById('final-ranking').classList.add('hidden');
+                const finalRanking = document.getElementById('final-ranking');
+                if (finalRanking) {
+                    finalRanking.classList.add('hidden');
+                }
 
                 showCustomAlert('🔄 Toutes les données ont été réinitialisées !');
             }
         );
-    });
+    };
 
     // Bouton pour activer/désactiver la musique
     document.getElementById('toggle-music-btn').addEventListener('click', () => {
@@ -4161,7 +4372,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Afficher un écran
 function showScreen(screenId) {
-    const screens = ['login-screen', 'player-entry-screen', 'supervisor-screen', 'boxes-screen', 'game-screen', 'end-screen', 'admin-screen'];
+    const screens = ['login-screen', 'player-entry-screen', 'supervisor-screen', 'boxes-screen', 'game-screen', 'end-screen', 'stage-pause-screen', 'admin-screen'];
     screens.forEach(id => {
         document.getElementById(id).classList.add('hidden');
     });
@@ -4321,6 +4532,72 @@ function updateSupervisorDisplay() {
     if (finishedTeams > 0 && finishedTeams === teamsArray.length && teamsArray.length > 0) {
         showFinalRanking();
     }
+}
+
+// Variable pour éviter plusieurs listeners
+let stagePauseListenerActive = false;
+
+// Vérifier si le jeu est en pause sur une étape
+function checkPausedStages() {
+    if (!sessionId || !database) {
+        console.warn('⚠️ checkPausedStages: sessionId ou database manquant');
+        return;
+    }
+
+    // Éviter de créer plusieurs listeners
+    if (!stagePauseListenerActive) {
+        stagePauseListenerActive = true;
+        console.log('🎯 Démarrage du listener Firebase pour les étapes en pause');
+
+        database.ref(`sessions/${sessionId}/stages`).on('value', (snapshot) => {
+            updatePauseButton(snapshot.val());
+        });
+
+        // BACKUP: Vérification périodique toutes les 3 secondes
+        // (au cas où le listener Firebase ne se déclenche pas)
+        setInterval(() => {
+            if (appMode === 'supervisor') {
+                database.ref(`sessions/${sessionId}/stages`).once('value', (snapshot) => {
+                    updatePauseButton(snapshot.val());
+                });
+            }
+        }, 3000);
+    }
+}
+
+// Fonction pour mettre à jour le bouton de pause
+function updatePauseButton(stages) {
+    const resumeBtn = document.getElementById('resume-game-btn');
+    const stageDisplay = document.getElementById('current-stage-display');
+    const stageNumberDisplay = document.getElementById('paused-stage-number');
+
+    console.log('🔍 Superviseur - Vérification des étapes en pause:', stages);
+
+    if (!stages) {
+        // Aucune étape en pause
+        console.log('📭 Aucune étape trouvée');
+        if (resumeBtn) resumeBtn.classList.add('hidden');
+        if (stageDisplay) stageDisplay.classList.add('hidden');
+        return;
+    }
+
+    // Vérifier s'il y a une étape en pause
+    for (let i = 1; i <= 4; i++) {
+        const stage = stages[`stage${i}`];
+        if (stage && stage.paused === true) {
+            // Le jeu est en pause sur cette étape
+            console.log(`⏸️ Superviseur - Étape ${i} en pause détectée, affichage du bouton reprendre`);
+            if (resumeBtn) resumeBtn.classList.remove('hidden');
+            if (stageDisplay) stageDisplay.classList.remove('hidden');
+            if (stageNumberDisplay) stageNumberDisplay.textContent = i;
+            return;
+        }
+    }
+
+    // Aucune étape en pause
+    console.log('✅ Aucune étape en pause trouvée');
+    if (resumeBtn) resumeBtn.classList.add('hidden');
+    if (stageDisplay) stageDisplay.classList.add('hidden');
 }
 
 function showFinalRanking() {
@@ -4595,12 +4872,7 @@ function renderTrueFalse(game, container) {
 
             btn.classList.add('scale-110', 'shadow-2xl', 'ring-4', 'ring-yellow-400');
 
-            // Afficher l'explication si elle existe
-            if (game.explanation) {
-                const explanation = document.getElementById('explanation-text');
-                explanation.style.opacity = '1';
-                explanation.classList.add('bounce-in');
-            }
+            // NE PAS afficher l'explication ici - elle sera affichée après validation
 
             document.getElementById('reset-answer-btn').classList.remove('hidden');
         });
@@ -4611,7 +4883,21 @@ function renderTrueFalse(game, container) {
             showCustomAlert('⚠️ Veuillez sélectionner une réponse !');
             return false;
         }
-        return gameState.currentAnswer === game.correctAnswer;
+
+        const isCorrect = gameState.currentAnswer === game.correctAnswer;
+
+        // Afficher l'explication APRÈS validation si elle existe et que la réponse est correcte
+        if (isCorrect && game.explanation) {
+            setTimeout(() => {
+                const explanation = document.getElementById('explanation-text');
+                if (explanation) {
+                    explanation.style.opacity = '1';
+                    explanation.classList.add('bounce-in');
+                }
+            }, 500);
+        }
+
+        return isCorrect;
     });
 }
 
@@ -5376,7 +5662,36 @@ function setupValidation(validateFunction) {
     document.getElementById('reset-answer-btn').onclick = () => {
         playSound('tick');
         gameState.currentAnswer = null;
-        loadBoxGame();
+        // Recharger la MÊME question (pas une nouvelle variation)
+        const box = boxesData[gameState.currentBoxIndex];
+        const gameVariations = box.games[gameState.currentGameIndex];
+        const game = Array.isArray(gameVariations) ? gameVariations[0] : gameVariations;
+
+        // Réinitialiser le temps et les tentatives pour cette question
+        gameState.timeLeft = game.timeLimit;
+
+        // Recharger l'interface de jeu
+        const container = document.getElementById('current-game');
+        container.className = 'glass-morphism rounded-3xl shadow-2xl p-6 md:p-8 bounce-in';
+        document.getElementById('reset-answer-btn').classList.add('hidden');
+
+        // Recharger le même type de jeu
+        switch(game.type) {
+            case 'quiz': renderQuiz(game, container); break;
+            case 'true-false': renderTrueFalse(game, container); break;
+            case 'quiz-illustrated': renderQuizIllustrated(game, container); break;
+            case 'quiz-multi': renderQuizMulti(game, container); break;
+            case 'matching': renderMatching(game, container); break;
+            case 'sequence': renderSequence(game, container); break;
+            case 'puzzle-text': renderPuzzleText(game, container); break;
+            case 'draw': renderDraw(game, container); break;
+            case 'image-puzzle': renderImagePuzzle(game, container); break;
+            case 'video-quiz': renderVideoQuiz(game, container); break;
+            case 'image-quiz': renderImageQuiz(game, container); break;
+        }
+
+        updateGameDisplay();
+        startTimer();
     };
 }
 
@@ -5521,6 +5836,52 @@ function unlockBox() {
     }, 3000);
 }
 
+// Vérifier si cette équipe est la première à compléter cette étape
+function checkAndTriggerStagePause(stageNumber) {
+    if (!database) {
+        console.error('❌ Firebase non disponible, impossible de synchroniser les étapes');
+        return;
+    }
+
+    const stagePath = `sessions/${sessionId}/stages/stage${stageNumber}`;
+    console.log(`📝 Écriture dans Firebase: ${stagePath}`);
+
+    const stageRef = database.ref(stagePath);
+
+    stageRef.transaction((currentData) => {
+        console.log('🔄 Transaction Firebase - données actuelles:', currentData);
+
+        if (currentData === null) {
+            // Personne n'a encore complété cette étape, on est les premiers !
+            const newData = {
+                firstTeam: currentTeamName,
+                firstTeamTime: Date.now(),
+                paused: true
+            };
+            console.log('✍️ Écriture des nouvelles données:', newData);
+            return newData;
+        }
+        // Quelqu'un d'autre a déjà complété cette étape
+        console.log('⏭️ Étape déjà complétée par une autre équipe, transaction annulée');
+        return undefined; // Annuler la transaction
+    }, (error, committed, snapshot) => {
+        if (error) {
+            console.error('❌ Erreur lors de la vérification de l\'étape:', error);
+        } else if (committed) {
+            // On est les premiers ! Afficher un message spécial
+            console.log(`🏆 Transaction réussie ! Première équipe à compléter l'étape ${stageNumber} !`);
+            console.log('📊 Données écrites dans Firebase:', snapshot.val());
+            showFeedback(`🏆 Première équipe à compléter l'étape ${stageNumber} !`, 'success');
+
+            // Mettre le jeu en pause localement
+            gamePaused = true;
+            currentStage = stageNumber;
+        } else {
+            console.log(`⏭️ Une autre équipe a déjà complété l'étape ${stageNumber}`);
+        }
+    });
+}
+
 // ==================== TIMER ====================
 
 function startTimer() {
@@ -5579,6 +5940,85 @@ function updateGameDisplay() {
     document.getElementById('game-score-display').textContent = gameState.totalScore;
     document.getElementById('timer-display').textContent = gameState.timeLeft;
     document.getElementById('attempts-display').textContent = '❤️'.repeat(gameState.attempts) + '🖤'.repeat(gameState.maxAttempts - gameState.attempts);
+}
+
+// ==================== ÉCRAN DE PAUSE D'ÉTAPE ====================
+
+function showStagePauseScreen(stageNumber, stageData) {
+    stopTimer();
+    playSound('complete');
+
+    // Afficher l'écran de pause
+    showScreen('stage-pause-screen');
+
+    // Mettre à jour les informations de l'étape
+    document.getElementById('stage-number').textContent = stageNumber;
+    document.getElementById('first-team-name').textContent = stageData.firstTeam || 'Équipe';
+
+    // Récupérer et afficher le classement pour cette étape
+    updateStageRankings(stageNumber);
+
+    // Rafraîchir les coffres en arrière-plan pour qu'ils soient bloqués
+    renderBoxes();
+}
+
+function updateStageRankings(stageNumber) {
+    if (!sessionId || !database) return;
+
+    const rankingsList = document.getElementById('stage-rankings-list');
+    rankingsList.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Chargement du classement...</div>';
+
+    database.ref('teams').once('value', (snapshot) => {
+        const allTeams = snapshot.val() || {};
+        const teamsArray = [];
+
+        // Filtrer les équipes qui ont complété cette étape (stageNumber * 2 coffres)
+        const requiredBoxes = stageNumber * 2;
+
+        Object.keys(allTeams).forEach(teamKey => {
+            const team = allTeams[teamKey];
+            if (team.sessionId === sessionId && team.boxesUnlocked >= requiredBoxes) {
+                teamsArray.push({
+                    name: team.teamName,
+                    score: team.totalScore,
+                    boxesUnlocked: team.boxesUnlocked,
+                    completedStageAt: team.lastUpdate || 0
+                });
+            }
+        });
+
+        // Trier par score décroissant
+        teamsArray.sort((a, b) => b.score - a.score);
+
+        // Afficher le classement
+        if (teamsArray.length === 0) {
+            rankingsList.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Aucune équipe n\'a encore complété cette étape.</div>';
+            return;
+        }
+
+        rankingsList.innerHTML = '';
+        teamsArray.forEach((team, index) => {
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+            const rankingItem = document.createElement('div');
+            rankingItem.className = `flex justify-between items-center p-4 rounded-lg ${
+                index === 0 ? 'bg-yellow-100 dark:bg-yellow-900' :
+                index === 1 ? 'bg-gray-100 dark:bg-gray-700' :
+                index === 2 ? 'bg-orange-100 dark:bg-orange-900' :
+                'bg-gray-50 dark:bg-gray-800'
+            }`;
+            rankingItem.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">${medal}</span>
+                    <span class="font-semibold text-gray-800 dark:text-white">${team.name}</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-lg font-bold text-primary">${team.score} pts</span>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">${team.boxesUnlocked}/8 coffres</span>
+                </div>
+            `;
+            rankingsList.appendChild(rankingItem);
+        });
+    });
 }
 
 // ==================== FIN DE JEU ====================
