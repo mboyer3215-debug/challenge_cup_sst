@@ -4547,44 +4547,70 @@ function updateSupervisorDisplay() {
     }
 }
 
+// Variable pour éviter plusieurs listeners
+let stagePauseListenerActive = false;
+
 // Vérifier si le jeu est en pause sur une étape
 function checkPausedStages() {
-    if (!sessionId || !database) return;
+    if (!sessionId || !database) {
+        console.warn('⚠️ checkPausedStages: sessionId ou database manquant');
+        return;
+    }
 
-    database.ref(`sessions/${sessionId}/stages`).on('value', (snapshot) => {
-        const stages = snapshot.val();
-        const resumeBtn = document.getElementById('resume-game-btn');
-        const stageDisplay = document.getElementById('current-stage-display');
-        const stageNumberDisplay = document.getElementById('paused-stage-number');
+    // Éviter de créer plusieurs listeners
+    if (!stagePauseListenerActive) {
+        stagePauseListenerActive = true;
+        console.log('🎯 Démarrage du listener Firebase pour les étapes en pause');
 
-        console.log('🔍 Superviseur - Vérification des étapes en pause:', stages);
+        database.ref(`sessions/${sessionId}/stages`).on('value', (snapshot) => {
+            updatePauseButton(snapshot.val());
+        });
 
-        if (!stages) {
-            // Aucune étape en pause
-            console.log('📭 Aucune étape trouvée');
-            if (resumeBtn) resumeBtn.classList.add('hidden');
-            if (stageDisplay) stageDisplay.classList.add('hidden');
-            return;
-        }
-
-        // Vérifier s'il y a une étape en pause
-        for (let i = 1; i <= 4; i++) {
-            const stage = stages[`stage${i}`];
-            if (stage && stage.paused) {
-                // Le jeu est en pause sur cette étape
-                console.log(`⏸️ Superviseur - Étape ${i} en pause détectée, affichage du bouton reprendre`);
-                if (resumeBtn) resumeBtn.classList.remove('hidden');
-                if (stageDisplay) stageDisplay.classList.remove('hidden');
-                if (stageNumberDisplay) stageNumberDisplay.textContent = i;
-                return;
+        // BACKUP: Vérification périodique toutes les 3 secondes
+        // (au cas où le listener Firebase ne se déclenche pas)
+        setInterval(() => {
+            if (appMode === 'supervisor') {
+                database.ref(`sessions/${sessionId}/stages`).once('value', (snapshot) => {
+                    updatePauseButton(snapshot.val());
+                });
             }
-        }
+        }, 3000);
+    }
+}
 
+// Fonction pour mettre à jour le bouton de pause
+function updatePauseButton(stages) {
+    const resumeBtn = document.getElementById('resume-game-btn');
+    const stageDisplay = document.getElementById('current-stage-display');
+    const stageNumberDisplay = document.getElementById('paused-stage-number');
+
+    console.log('🔍 Superviseur - Vérification des étapes en pause:', stages);
+
+    if (!stages) {
         // Aucune étape en pause
-        console.log('✅ Aucune étape en pause trouvée');
+        console.log('📭 Aucune étape trouvée');
         if (resumeBtn) resumeBtn.classList.add('hidden');
         if (stageDisplay) stageDisplay.classList.add('hidden');
-    });
+        return;
+    }
+
+    // Vérifier s'il y a une étape en pause
+    for (let i = 1; i <= 4; i++) {
+        const stage = stages[`stage${i}`];
+        if (stage && stage.paused === true) {
+            // Le jeu est en pause sur cette étape
+            console.log(`⏸️ Superviseur - Étape ${i} en pause détectée, affichage du bouton reprendre`);
+            if (resumeBtn) resumeBtn.classList.remove('hidden');
+            if (stageDisplay) stageDisplay.classList.remove('hidden');
+            if (stageNumberDisplay) stageNumberDisplay.textContent = i;
+            return;
+        }
+    }
+
+    // Aucune étape en pause
+    console.log('✅ Aucune étape en pause trouvée');
+    if (resumeBtn) resumeBtn.classList.add('hidden');
+    if (stageDisplay) stageDisplay.classList.add('hidden');
 }
 
 function showFinalRanking() {
