@@ -333,9 +333,6 @@
                     <button id="back-to-login-supervisor" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-all">
                         ← Retour
                     </button>
-                    <button id="resume-game-btn" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all hidden">
-                        ▶️ Reprendre le Jeu
-                    </button>
                     <button id="stop-all-games-btn" class="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-all">
                         ⏸️ Arrêter le Jeu
                     </button>
@@ -357,10 +354,6 @@
                     <div class="text-center">
                         <div class="text-3xl font-bold text-green-600" id="finished-teams-count">0</div>
                         <div class="text-sm text-gray-600 dark:text-gray-400">Équipes Terminées</div>
-                    </div>
-                    <div id="current-stage-display" class="text-center hidden">
-                        <div class="text-3xl font-bold text-orange-600">⏸️ Étape <span id="paused-stage-number">1</span></div>
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Jeu en pause</div>
                     </div>
                     <div class="flex items-center gap-2">
                         <div class="w-3 h-3 bg-green-500 rounded-full pulse-anim"></div>
@@ -4685,31 +4678,9 @@ function renderBoxes() {
     const container = document.getElementById('boxes-container');
     container.innerHTML = '';
 
-    // Déterminer l'étape actuelle autorisée (basée sur la pause Firebase)
-    let maxAllowedBox = 8; // Par défaut, tous les coffres sont accessibles
-
-    // Si le jeu est en pause, bloquer au-delà de l'étape actuelle
-    if (sessionId && database && gamePaused) {
-        maxAllowedBox = currentStage * 2;
-        console.log(`🔒 Jeu en pause à l'étape ${currentStage}, coffres bloqués après ${maxAllowedBox}`);
-    }
-
-    // IMPORTANT: Aussi bloquer si le joueur actuel a atteint un palier d'étape (2, 4, 6)
-    // car Firebase peut prendre un moment pour notifier
-    const currentBoxesUnlocked = gameState.boxesUnlocked;
-    if (currentBoxesUnlocked > 0 && currentBoxesUnlocked % 2 === 0 && currentBoxesUnlocked < 8) {
-        // Le joueur a complété une étape, ne pas le laisser continuer immédiatement
-        const playerStage = currentBoxesUnlocked / 2;
-        if (maxAllowedBox > currentBoxesUnlocked) {
-            maxAllowedBox = currentBoxesUnlocked;
-            console.log(`⏸️ Joueur a complété l'étape ${playerStage}, blocage temporaire en attendant la confirmation Firebase`);
-        }
-    }
-
     boxesData.forEach((box, index) => {
         const isUnlocked = gameState.boxesUnlocked > index;
         const isCurrent = gameState.boxesUnlocked === index;
-        const isBlocked = index >= maxAllowedBox; // Bloqué par le système d'étapes
 
         const boxElement = document.createElement('div');
         boxElement.className = `${isUnlocked ? 'unlocked-box' : 'locked-box'} cursor-pointer transition-all duration-500 bounce-in`;
@@ -4737,22 +4708,21 @@ function renderBoxes() {
         const svgIcon = chestType === 'safe' ? getSafeSVG(colorObj, !isUnlocked) : getTreasureChestSVG(colorObj, !isUnlocked);
 
         boxElement.innerHTML = `
-            <div class="relative p-6 rounded-2xl bg-gradient-to-br ${box.color} shadow-2xl transform hover:scale-105 transition-all duration-300 ${isCurrent && !isBlocked ? 'ring-4 ring-yellow-400 ring-opacity-75 animate-pulse' : ''} ${isBlocked ? 'opacity-40' : ''}">
+            <div class="relative p-6 rounded-2xl bg-gradient-to-br ${box.color} shadow-2xl transform hover:scale-105 transition-all duration-300 ${isCurrent ? 'ring-4 ring-yellow-400 ring-opacity-75 animate-pulse' : ''}">
                 <div class="text-center mb-4">
-                    <div class="w-32 h-32 mx-auto mb-3 ${!isUnlocked && !isCurrent ? 'opacity-50 grayscale' : ''} ${isCurrent && !isBlocked ? 'float' : ''}">
+                    <div class="w-32 h-32 mx-auto mb-3 ${!isUnlocked && !isCurrent ? 'opacity-50 grayscale' : ''} ${isCurrent ? 'float' : ''}">
                         ${svgIcon}
                     </div>
                 </div>
                 <h3 class="text-xl font-bold text-white text-center mb-2">${box.title}</h3>
                 <p class="text-sm text-white text-opacity-90 text-center mb-4">${box.subtitle}</p>
                 ${isUnlocked ? '<div class="text-center text-white font-bold text-lg">✓ DÉVERROUILLÉ</div>' :
-                 isBlocked ? '<div class="text-center text-white font-bold text-lg">⏸️ ÉTAPE BLOQUÉE</div>' :
                  isCurrent ? '<div class="text-center text-white font-bold text-lg animate-pulse glow">🎯 CLIQUE ICI !</div>' :
                  '<div class="text-center text-white text-opacity-70">🔒 Verrouillé</div>'}
             </div>
         `;
 
-        if ((isCurrent || isUnlocked) && !isBlocked) {
+        if (isCurrent || isUnlocked) {
             boxElement.addEventListener('click', () => {
                 playSound('tick');
                 createChestOpenEffect(boxElement); // Effet de particules !
@@ -4760,11 +4730,6 @@ function renderBoxes() {
                 gameState.currentGameIndex = 0;
                 gameState.gameScore = 0;
                 loadBoxGame();
-            });
-        } else if (isBlocked) {
-            boxElement.addEventListener('click', () => {
-                playSound('error');
-                showCustomAlert('⏸️ Attendez que le superviseur reprenne le jeu pour continuer !');
             });
         }
 
@@ -5886,42 +5851,11 @@ function unlockBox() {
         totalScore: gameState.totalScore
     });
 
-    // Vérifier si une étape est complétée (2, 4, 6, ou 8 coffres)
-    const stageCompleted = gameState.boxesUnlocked % 2 === 0 && gameState.boxesUnlocked <= 8;
-    const stageNumber = gameState.boxesUnlocked / 2;
-
     broadcastUpdate();
-
-    // Si une étape est complétée, vérifier si c'est le premier à la compléter
-    if (stageCompleted && sessionId && database) {
-        checkAndTriggerStagePause(stageNumber);
-    }
 
     setTimeout(() => {
         if (gameState.boxesUnlocked >= boxesData.length) {
             endGame();
-        } else if (stageCompleted && gameState.boxesUnlocked < 8) {
-            // Une étape vient d'être complétée
-            console.log(`⏸️ Étape ${stageNumber} complétée, blocage local et notification superviseur`);
-            gamePaused = true;
-            currentStage = stageNumber;
-
-            // Envoyer une COMMANDE pour notifier le superviseur
-            sendCommand(`stage_${stageNumber}_completed`);
-
-            // Attendre un peu que Firebase se synchronise
-            setTimeout(() => {
-                // Vérifier dans Firebase qui est le premier
-                database.ref(`sessions/${sessionId}/stages/stage${stageNumber}`).once('value', (snapshot) => {
-                    const stageData = snapshot.val();
-                    if (stageData) {
-                        showStagePauseScreen(stageNumber, stageData);
-                    } else {
-                        // Fallback si Firebase n'a pas encore les données
-                        showStagePauseScreen(stageNumber, { firstTeam: currentTeamName, paused: true });
-                    }
-                });
-            }, 500);
         } else {
             showScreen('boxes-screen');
             renderBoxes();
