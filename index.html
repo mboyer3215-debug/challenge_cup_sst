@@ -3559,6 +3559,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // Écouter les changements en temps réel
         startListeningToTeams();
+
+        // Écouter les changements d'état des étapes (pour afficher le bouton reprendre)
+        checkPausedStages();
     });
 
     // Bouton Accès Joueur Direct (pour test en local)
@@ -4435,9 +4438,6 @@ function updateSupervisorDisplay() {
     document.getElementById('active-teams-count').textContent = activeTeams;
     document.getElementById('finished-teams-count').textContent = finishedTeams;
 
-    // Vérifier si le jeu est en pause sur une étape
-    checkPausedStages();
-
     // Mettre à jour les barres de progression
     container.innerHTML = '';
 
@@ -4551,16 +4551,19 @@ function updateSupervisorDisplay() {
 function checkPausedStages() {
     if (!sessionId || !database) return;
 
-    database.ref(`sessions/${sessionId}/stages`).once('value', (snapshot) => {
+    database.ref(`sessions/${sessionId}/stages`).on('value', (snapshot) => {
         const stages = snapshot.val();
         const resumeBtn = document.getElementById('resume-game-btn');
         const stageDisplay = document.getElementById('current-stage-display');
         const stageNumberDisplay = document.getElementById('paused-stage-number');
 
+        console.log('🔍 Superviseur - Vérification des étapes en pause:', stages);
+
         if (!stages) {
             // Aucune étape en pause
-            resumeBtn.classList.add('hidden');
-            stageDisplay.classList.add('hidden');
+            console.log('📭 Aucune étape trouvée');
+            if (resumeBtn) resumeBtn.classList.add('hidden');
+            if (stageDisplay) stageDisplay.classList.add('hidden');
             return;
         }
 
@@ -4569,16 +4572,18 @@ function checkPausedStages() {
             const stage = stages[`stage${i}`];
             if (stage && stage.paused) {
                 // Le jeu est en pause sur cette étape
-                resumeBtn.classList.remove('hidden');
-                stageDisplay.classList.remove('hidden');
-                stageNumberDisplay.textContent = i;
+                console.log(`⏸️ Superviseur - Étape ${i} en pause détectée, affichage du bouton reprendre`);
+                if (resumeBtn) resumeBtn.classList.remove('hidden');
+                if (stageDisplay) stageDisplay.classList.remove('hidden');
+                if (stageNumberDisplay) stageNumberDisplay.textContent = i;
                 return;
             }
         }
 
         // Aucune étape en pause
-        resumeBtn.classList.add('hidden');
-        stageDisplay.classList.add('hidden');
+        console.log('✅ Aucune étape en pause trouvée');
+        if (resumeBtn) resumeBtn.classList.add('hidden');
+        if (stageDisplay) stageDisplay.classList.add('hidden');
     });
 }
 
