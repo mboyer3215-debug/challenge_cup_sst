@@ -232,13 +232,13 @@
         <!-- Écran d'authentification par mot de passe -->
         <div id="auth-screen" class="max-w-md mx-auto">
             <div class="text-center mb-8 bounce-in">
-                <div class="text-8xl mb-6">🔐</div>
-                <h1 class="text-4xl md:text-5xl font-bold text-primary mb-4">Accès Sécurisé</h1>
-                <p class="text-lg text-gray-700 dark:text-gray-300">Jeu SST Privé</p>
+                <div class="text-8xl mb-6">👨‍🏫</div>
+                <h1 class="text-4xl md:text-5xl font-bold text-primary mb-4">Accès Superviseur</h1>
+                <p class="text-lg text-gray-700 dark:text-gray-300">Chasse au Trésor SST</p>
             </div>
 
             <div class="glass-morphism rounded-3xl shadow-2xl p-8 bounce-in" style="animation-delay: 0.2s">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">Entrez le mot de passe</h2>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">Mot de passe superviseur</h2>
 
                 <form id="auth-form" class="space-y-6">
                     <div>
@@ -268,7 +268,7 @@
                 </form>
 
                 <div class="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
-                    🔒 Accès réservé aux membres autorisés
+                    🔒 Réservé au superviseur de formation
                 </div>
             </div>
         </div>
@@ -727,13 +727,25 @@ let isUserAuthenticated = false;
 
 // Vérifier si l'utilisateur est déjà authentifié
 function checkAuthentication() {
+    // Vérifier d'abord si c'est un accès joueur via QR code
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+
+    if (mode === 'player') {
+        // Accès joueur direct via QR code - pas besoin de mot de passe
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('player-entry-screen').classList.remove('hidden');
+        return true;
+    }
+
     if (isUserAuthenticated) {
-        // L'utilisateur est déjà authentifié
+        // L'utilisateur superviseur est déjà authentifié
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('login-screen').classList.remove('hidden');
         return true;
     } else {
-        // L'utilisateur doit s'authentifier
+        // L'utilisateur doit s'authentifier (superviseur)
         document.getElementById('auth-screen').classList.remove('hidden');
         document.getElementById('login-screen').classList.add('hidden');
         return false;
@@ -3351,17 +3363,8 @@ function generateQRCode() {
 window.addEventListener('DOMContentLoaded', () => {
     generateQRCode();
 
-    // Vérifier si l'URL contient le paramètre mode=player
-    const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode');
-
-    if (mode === 'player') {
-        // Afficher directement l'écran d'entrée joueur
-        showScreen('player-entry-screen');
-    } else {
-        // Afficher l'écran de connexion superviseur par défaut
-        showScreen('login-screen');
-    }
+    // Vérifier l'authentification et afficher l'écran approprié
+    checkAuthentication();
 
     // Bouton Superviseur
     document.getElementById('supervisor-btn').addEventListener('click', () => {
