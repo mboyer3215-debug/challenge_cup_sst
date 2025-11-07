@@ -4914,7 +4914,6 @@ function renderTrueFalse(game, container) {
                 <div class="text-2xl">${game.options[1]}</div>
             </button>
         </div>
-        ${game.explanation ? `<div class="mt-6 p-4 bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 rounded-xl text-sm text-gray-700 dark:text-gray-300 text-center opacity-0" id="explanation-text">💡 ${game.explanation}</div>` : ''}
     `;
 
     document.querySelectorAll('.true-false-option').forEach(btn => {
@@ -4941,18 +4940,6 @@ function renderTrueFalse(game, container) {
         }
 
         const isCorrect = gameState.currentAnswer === game.correctAnswer;
-
-        // Afficher l'explication APRÈS validation si elle existe et que la réponse est correcte
-        if (isCorrect && game.explanation) {
-            setTimeout(() => {
-                const explanation = document.getElementById('explanation-text');
-                if (explanation) {
-                    explanation.style.opacity = '1';
-                    explanation.classList.add('bounce-in');
-                }
-            }, 500);
-        }
-
         return isCorrect;
     });
 }
@@ -5829,10 +5816,10 @@ function validateAnswer(isCorrect) {
 
         createConfetti();
 
-        // 1. Afficher d'abord un message simple
+        // 1. Afficher d'abord un message simple (flash 1,5s)
         showFeedback(`✓ Bonne réponse !`, 'success');
 
-        // 2. Attendre 2.5s puis afficher l'explication pendant 5 secondes
+        // 2. Attendre 1.5s puis afficher l'explication pendant 5 secondes
         setTimeout(() => {
             if (currentGame.explanation) {
                 const correctAnswerHTML = getCorrectAnswerText(currentGame);
@@ -5842,18 +5829,18 @@ function validateAnswer(isCorrect) {
                 `;
                 showFeedbackWithAnswer(`📖 Explication`, explanationHTML, 'success');
             }
-        }, 2500);
+        }, 1500);
 
-        // 3. Attendre 7.5s (2.5 + 5) puis afficher le panneau de points simple
+        // 3. Attendre 6.5s (1.5 + 5) puis afficher le panneau de points simple (flash 1,5s)
         setTimeout(() => {
             showFeedback(`🎉 +${points} points !`, 'success');
-        }, 7500);
+        }, 6500);
 
-        // 4. Charger le prochain jeu après 10 secondes total (2.5 + 5 + 2.5)
+        // 4. Charger le prochain jeu après 8 secondes total (1.5 + 5 + 1.5)
         setTimeout(() => {
             gameState.currentGameIndex++;
             loadBoxGame();
-        }, 10000);
+        }, 8000);
     } else {
         playSound('wrong'); // Son "wrong" au lieu de "error"
         gameState.attempts--;
@@ -5883,7 +5870,7 @@ function showFeedback(message, type) {
     feedback.className = `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-10 py-8 rounded-3xl text-white text-2xl md:text-3xl font-bold shadow-2xl z-50 bounce-in ${type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-red-500 to-pink-600'}`;
     feedback.innerHTML = message; // Changé de textContent à innerHTML pour supporter le HTML
     document.body.appendChild(feedback);
-    setTimeout(() => feedback.remove(), 2500);
+    setTimeout(() => feedback.remove(), 1500); // Message flash réduit à 1,5s
 }
 
 function showFeedbackWithAnswer(message, answerHTML, type) {
