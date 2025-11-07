@@ -3332,6 +3332,7 @@ const gameState = {
     timeLeft: 60,
     timerInterval: null,
     boxesUnlocked: 0,
+    pauseLifted: false, // Indique si le formateur a levé la pause
     stats: {
         gamesWon: 0,
         gamesLost: 0,
@@ -3366,6 +3367,7 @@ function broadcastUpdate() {
         boxesUnlocked: gameState.boxesUnlocked,
         totalScore: gameState.totalScore,
         currentStage: teamStage,
+        pauseLifted: gameState.pauseLifted, // Indique si la pause a été levée
         isFinished: gameState.boxesUnlocked >= boxesData.length,
         finishTime: gameState.stats.endTime || null,
         stats: {
@@ -3427,6 +3429,7 @@ function startListeningToCommands() {
             const pauseScreen = document.getElementById('stage-pause-screen');
             if (pauseScreen && !pauseScreen.classList.contains('hidden')) {
                 console.log('✅ Reprise depuis l\'écran de pause');
+                gameState.pauseLifted = true; // Lever la pause
                 showScreen('boxes-screen');
                 renderBoxes();
                 showCustomAlert('▶️ Le formateur a repris le jeu ! Vous pouvez continuer.');
@@ -4412,6 +4415,7 @@ function resetGameState() {
     gameState.gameScore = 0;
     gameState.attempts = 3;
     gameState.boxesUnlocked = 0;
+    gameState.pauseLifted = false;
     gameState.stats = { gamesWon: 0, gamesLost: 0, totalTime: 0, startTime: Date.now(), endTime: null };
     gameState.currentAnswer = null;
 
@@ -4529,8 +4533,8 @@ function updateSupervisorDisplay() {
             `;
         }
 
-        // Vérifier si l'équipe est en pause (multiples de 2 coffres et pas terminé)
-        const isPaused = !team.isFinished && team.boxesUnlocked % 2 === 0 && team.boxesUnlocked > 0 && team.boxesUnlocked < boxesData.length;
+        // Vérifier si l'équipe est en pause (multiples de 2 coffres et pas terminé ET pause pas levée)
+        const isPaused = !team.isFinished && team.boxesUnlocked % 2 === 0 && team.boxesUnlocked > 0 && team.boxesUnlocked < boxesData.length && !team.pauseLifted;
 
         teamDiv.innerHTML = `
             <div class="glass-morphism rounded-2xl p-4 shadow-xl relative">
@@ -4727,7 +4731,7 @@ function renderBoxes() {
         if (isCurrent || isUnlocked) {
             boxElement.addEventListener('click', () => {
                 // Vérifier si on est en pause AVANT de permettre de jouer
-                const isPausedNow = gameState.boxesUnlocked % 2 === 0 && gameState.boxesUnlocked > 0 && gameState.boxesUnlocked < boxesData.length;
+                const isPausedNow = gameState.boxesUnlocked % 2 === 0 && gameState.boxesUnlocked > 0 && gameState.boxesUnlocked < boxesData.length && !gameState.pauseLifted;
 
                 if (isPausedNow && index === gameState.boxesUnlocked) {
                     // On est en pause et on essaie de cliquer sur le coffre suivant
@@ -5859,6 +5863,9 @@ function unlockBox() {
     showFeedback(`🔓 ${box.title} déverrouillé !`, 'success');
 
     gameState.boxesUnlocked++;
+
+    // Réinitialiser le flag de pause levée (pour la prochaine pause)
+    gameState.pauseLifted = false;
 
     // DEBUG: Afficher l'état après déverrouillage
     console.log('🔓 Coffre déverrouillé:', {
