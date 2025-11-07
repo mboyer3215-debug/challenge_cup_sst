@@ -5834,30 +5834,20 @@ function validateAnswer(isCorrect) {
 
         // Attendre 5 secondes avant d'afficher le panneau de points détaillé
         setTimeout(() => {
-            // Créer le panneau de points détaillé
+            // Créer le panneau de points détaillé (HTML simple, bien rendu)
             const pointsDetail = `
-                <div class="text-center space-y-3">
-                    <div class="text-4xl font-bold text-green-600 dark:text-green-400 mb-4">🎉 +${points} points !</div>
-                    <div class="text-lg space-y-2">
-                        <div class="flex justify-between items-center px-6">
-                            <span class="text-gray-700 dark:text-gray-300">Points de base :</span>
-                            <span class="font-bold text-blue-600 dark:text-blue-400">+${basePoints}</span>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; margin-bottom: 1.5rem;">🎉 +${points} points !</div>
+                    <div style="font-size: 1.1rem; line-height: 2;">
+                        <div>Points de base : <strong>+${basePoints}</strong></div>
+                        <div>Bonus de rapidité : <strong style="color: #fbbf24;">+${timeBonus}</strong></div>
+                        <div>Bonus ${gameState.attempts} essai(s) : <strong style="color: #fb923c;">+${attemptsBonus}</strong></div>
+                        <div style="border-top: 2px solid rgba(255,255,255,0.3); margin: 1rem 0; padding-top: 1rem;">
+                            <strong style="font-size: 1.3rem;">Total : ${points} pts</strong>
                         </div>
-                        <div class="flex justify-between items-center px-6">
-                            <span class="text-gray-700 dark:text-gray-300">Bonus de rapidité :</span>
-                            <span class="font-bold text-purple-600 dark:text-purple-400">+${timeBonus}</span>
+                        <div style="font-size: 0.9rem; margin-top: 1rem; opacity: 0.9;">
+                            Score total : ${gameState.totalScore} points
                         </div>
-                        <div class="flex justify-between items-center px-6">
-                            <span class="text-gray-700 dark:text-gray-300">Bonus ${gameState.attempts} essai(s) :</span>
-                            <span class="font-bold text-orange-600 dark:text-orange-400">+${attemptsBonus}</span>
-                        </div>
-                        <div class="border-t-2 border-gray-300 dark:border-gray-600 pt-3 mt-3 flex justify-between items-center px-6">
-                            <span class="text-xl font-bold text-gray-800 dark:text-white">Total :</span>
-                            <span class="text-2xl font-bold text-green-600 dark:text-green-400">${points} pts</span>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                        Score total : ${gameState.totalScore} points
                     </div>
                 </div>
             `;
@@ -5896,7 +5886,7 @@ function validateAnswer(isCorrect) {
 function showFeedback(message, type) {
     const feedback = document.createElement('div');
     feedback.className = `fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-10 py-8 rounded-3xl text-white text-2xl md:text-3xl font-bold shadow-2xl z-50 bounce-in ${type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-red-500 to-pink-600'}`;
-    feedback.textContent = message;
+    feedback.innerHTML = message; // Changé de textContent à innerHTML pour supporter le HTML
     document.body.appendChild(feedback);
     setTimeout(() => feedback.remove(), 2500);
 }
