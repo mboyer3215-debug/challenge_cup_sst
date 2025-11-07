@@ -3325,6 +3325,7 @@ const boxesData = [
 const gameState = {
     currentBoxIndex: -1,
     currentGameIndex: 0,
+    currentVariationIndex: 0, // Index de la variation actuelle (pour recharger la même après reset)
     totalScore: 0,
     gameScore: 0,
     attempts: 3,
@@ -4788,9 +4789,17 @@ function loadBoxGame() {
     }
 
     // Si c'est un tableau de variations, en choisir une au hasard
-    const game = Array.isArray(gameVariations) ?
-        gameVariations[Math.floor(Math.random() * gameVariations.length)] :
-        gameVariations;
+    let game, variationIndex;
+    if (Array.isArray(gameVariations)) {
+        variationIndex = Math.floor(Math.random() * gameVariations.length);
+        game = gameVariations[variationIndex];
+    } else {
+        variationIndex = 0;
+        game = gameVariations;
+    }
+
+    // Stocker l'index de la variation pour pouvoir la recharger après reset
+    gameState.currentVariationIndex = variationIndex;
 
     gameState.attempts = gameState.maxAttempts;
     gameState.timeLeft = game.timeLimit;
@@ -5709,13 +5718,18 @@ function setupValidation(validateFunction) {
     document.getElementById('reset-answer-btn').onclick = () => {
         playSound('tick');
         gameState.currentAnswer = null;
-        // Recharger la MÊME question (pas une nouvelle variation)
+        // Recharger la MÊME question (même variation)
         const box = boxesData[gameState.currentBoxIndex];
         const gameVariations = box.games[gameState.currentGameIndex];
-        const game = Array.isArray(gameVariations) ? gameVariations[0] : gameVariations;
+
+        // Utiliser currentVariationIndex pour charger la MÊME variation
+        const game = Array.isArray(gameVariations)
+            ? gameVariations[gameState.currentVariationIndex]
+            : gameVariations;
 
         // Réinitialiser le temps et les tentatives pour cette question
         gameState.timeLeft = game.timeLimit;
+        gameState.attempts = gameState.maxAttempts;
 
         // Recharger l'interface de jeu
         const container = document.getElementById('current-game');
@@ -5777,16 +5791,28 @@ function validateAnswer(isCorrect) {
         const timeLimit = currentGame.timeLimit || 60;
         const basePoints = currentGame.points || 100;
 
-        const timeBonus = Math.floor(gameState.timeLeft / timeLimit * 50);
-        const points = basePoints + timeBonus;
+        // Calcul progressif des points
+        // 1. Bonus de temps (0-50 points): plus c'est rapide, plus c'est de points
+        const timeBonus = Math.floor((gameState.timeLeft / timeLimit) * 50);
+
+        // 2. Bonus d'essais (0-50 points): points en fonction des tentatives restantes
+        // 3 essais restants = 50pts, 2 essais = 30pts, 1 essai = 10pts, 0 essai = 0pts
+        const attemptsBonus = gameState.attempts === 3 ? 50 :
+                             gameState.attempts === 2 ? 30 :
+                             gameState.attempts === 1 ? 10 : 0;
+
+        // Total des points
+        const points = basePoints + timeBonus + attemptsBonus;
 
         console.log('🔍 CALCUL DES POINTS:', {
             gameType: currentGame.type,
             basePoints: basePoints,
             timeLeft: gameState.timeLeft,
             timeLimit: timeLimit,
+            attemptsLeft: gameState.attempts,
             timeBonus: timeBonus,
-            points: points
+            attemptsBonus: attemptsBonus,
+            totalPoints: points
         });
 
         gameState.gameScore += points;
@@ -5802,12 +5828,47 @@ function validateAnswer(isCorrect) {
         });
 
         createConfetti();
-        showFeedback(`✓ Excellent ! +${points} pts`, 'success');
 
+        // Afficher d'abord un message simple
+        showFeedback(`✓ Bonne réponse !`, 'success');
+
+        // Attendre 5 secondes avant d'afficher le panneau de points détaillé
+        setTimeout(() => {
+            // Créer le panneau de points détaillé
+            const pointsDetail = `
+                <div class="text-center space-y-3">
+                    <div class="text-4xl font-bold text-green-600 dark:text-green-400 mb-4">🎉 +${points} points !</div>
+                    <div class="text-lg space-y-2">
+                        <div class="flex justify-between items-center px-6">
+                            <span class="text-gray-700 dark:text-gray-300">Points de base :</span>
+                            <span class="font-bold text-blue-600 dark:text-blue-400">+${basePoints}</span>
+                        </div>
+                        <div class="flex justify-between items-center px-6">
+                            <span class="text-gray-700 dark:text-gray-300">Bonus de rapidité :</span>
+                            <span class="font-bold text-purple-600 dark:text-purple-400">+${timeBonus}</span>
+                        </div>
+                        <div class="flex justify-between items-center px-6">
+                            <span class="text-gray-700 dark:text-gray-300">Bonus ${gameState.attempts} essai(s) :</span>
+                            <span class="font-bold text-orange-600 dark:text-orange-400">+${attemptsBonus}</span>
+                        </div>
+                        <div class="border-t-2 border-gray-300 dark:border-gray-600 pt-3 mt-3 flex justify-between items-center px-6">
+                            <span class="text-xl font-bold text-gray-800 dark:text-white">Total :</span>
+                            <span class="text-2xl font-bold text-green-600 dark:text-green-400">${points} pts</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                        Score total : ${gameState.totalScore} points
+                    </div>
+                </div>
+            `;
+            showFeedback(pointsDetail, 'success');
+        }, 5000);
+
+        // Charger le prochain jeu après 8 secondes (5s explication + 3s panneau)
         setTimeout(() => {
             gameState.currentGameIndex++;
             loadBoxGame();
-        }, 2500);
+        }, 8000);
     } else {
         playSound('wrong'); // Son "wrong" au lieu de "error"
         gameState.attempts--;
