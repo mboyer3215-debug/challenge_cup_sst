@@ -5819,7 +5819,7 @@ function validateAnswer(isCorrect) {
         // 1. Afficher d'abord un message simple (flash 1,5s)
         showFeedback(`✓ Bonne réponse !`, 'success');
 
-        // 2. Attendre 1.5s puis afficher l'explication pendant 5 secondes
+        // 2. Attendre 1.5s puis afficher l'explication pendant 3 secondes
         setTimeout(() => {
             if (currentGame.explanation) {
                 const correctAnswerHTML = getCorrectAnswerText(currentGame);
@@ -5831,16 +5831,16 @@ function validateAnswer(isCorrect) {
             }
         }, 1500);
 
-        // 3. Attendre 6.5s (1.5 + 5) puis afficher le panneau de points simple (flash 1,5s)
+        // 3. Attendre 4.5s (1.5 + 3) puis afficher le panneau de points simple (flash 1,5s)
         setTimeout(() => {
             showFeedback(`🎉 +${points} points !`, 'success');
-        }, 6500);
+        }, 4500);
 
-        // 4. Charger le prochain jeu après 8 secondes total (1.5 + 5 + 1.5)
+        // 4. Charger le prochain jeu après 6 secondes total (1.5 + 3 + 1.5)
         setTimeout(() => {
             gameState.currentGameIndex++;
             loadBoxGame();
-        }, 8000);
+        }, 6000);
     } else {
         playSound('wrong'); // Son "wrong" au lieu de "error"
         gameState.attempts--;
@@ -5883,7 +5883,7 @@ function showFeedbackWithAnswer(message, answerHTML, type) {
         </div>
     `;
     document.body.appendChild(feedback);
-    setTimeout(() => feedback.remove(), 5000);
+    setTimeout(() => feedback.remove(), 3000); // Réduit à 3 secondes
 }
 
 function unlockBox() {
