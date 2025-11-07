@@ -336,6 +336,9 @@
                     <button id="stop-all-games-btn" class="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-all">
                         ⏸️ Arrêter le Jeu
                     </button>
+                    <button id="resume-game-btn" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all">
+                        ▶️ Reprendre le Jeu
+                    </button>
                     <button id="reset-all-btn" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all" onclick="resetAllData()">
                         🔄 Réinitialiser Tout
                     </button>
@@ -445,6 +448,43 @@
             </div>
         </div>
 
+        <!-- Écran de pause entre étapes -->
+        <div id="stage-pause-screen" class="hidden max-w-5xl mx-auto text-center">
+            <div class="glass-morphism rounded-3xl shadow-2xl p-8 md:p-12 bounce-in">
+                <div class="text-8xl mb-6">⏸️</div>
+                <h1 class="text-5xl md:text-6xl font-bold text-primary neon-text mb-6">Pause - Étape <span id="stage-number">1</span> terminée !</h1>
+                <p class="text-2xl text-gray-700 dark:text-gray-300 mb-8">Excellente progression ! En attente du formateur...</p>
+
+                <div class="bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white rounded-2xl p-10 mb-8 shadow-2xl">
+                    <div class="text-7xl font-bold mb-3" id="stage-score">0</div>
+                    <div class="text-3xl font-semibold">Points actuels</div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 mb-8 shadow-lg">
+                    <div class="text-5xl mb-4">⏳</div>
+                    <p class="text-xl text-gray-700 dark:text-gray-300">Le formateur va donner le signal pour continuer...</p>
+                    <div class="mt-6 flex items-center justify-center space-x-2">
+                        <div class="w-3 h-3 bg-primary rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-3 h-3 bg-primary rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-3 h-3 bg-primary rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                </div>
+
+                <div id="stage-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+                        <div class="text-4xl mb-2">📦</div>
+                        <div class="text-3xl font-bold text-primary" id="stage-boxes-unlocked">0</div>
+                        <div class="text-gray-600 dark:text-gray-400">Coffres déverrouillés</div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+                        <div class="text-4xl mb-2">🎯</div>
+                        <div class="text-3xl font-bold text-primary" id="stage-boxes-remaining">0</div>
+                        <div class="text-gray-600 dark:text-gray-400">Coffres restants</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Écran de fin -->
         <div id="end-screen" class="hidden max-w-5xl mx-auto text-center">
             <div class="glass-morphism rounded-3xl shadow-2xl p-8 md:p-12 bounce-in">
@@ -464,31 +504,6 @@
                 <button id="restart-btn" class="bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white text-3xl font-bold py-8 px-16 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 glow">
                     🔄 Recommencer l'Aventure
                 </button>
-            </div>
-        </div>
-
-        <!-- Écran de pause d'étape -->
-        <div id="stage-pause-screen" class="hidden max-w-5xl mx-auto text-center">
-            <div class="glass-morphism rounded-3xl shadow-2xl p-8 md:p-12 bounce-in">
-                <div class="text-8xl mb-6">⏸️</div>
-                <h1 class="text-5xl md:text-6xl font-bold text-primary neon-text mb-6">Étape <span id="stage-number">1</span> Complétée !</h1>
-                <p class="text-2xl text-gray-700 dark:text-gray-300 mb-8">Le jeu est en pause. Attendez que le superviseur reprenne le jeu.</p>
-
-                <div class="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white rounded-2xl p-10 mb-8 shadow-2xl">
-                    <div class="text-5xl font-bold mb-3">🏆 <span id="first-team-name">Équipe</span></div>
-                    <div class="text-2xl font-semibold">Première équipe à compléter cette étape !</div>
-                </div>
-
-                <div id="stage-rankings" class="bg-white dark:bg-gray-800 rounded-2xl p-6 mb-8 shadow-lg">
-                    <h2 class="text-3xl font-bold mb-4 text-gray-800 dark:text-white">📊 Classement de l'étape</h2>
-                    <div id="stage-rankings-list" class="space-y-3">
-                        <!-- Classement sera ajouté ici -->
-                    </div>
-                </div>
-
-                <div class="text-lg text-gray-600 dark:text-gray-400 animate-pulse">
-                    ⏳ En attente de la reprise par le superviseur...
-                </div>
             </div>
         </div>
 
@@ -555,7 +570,7 @@
                         </div>
 
                         <div id="admin-edit-form" class="hidden space-y-6 max-h-[600px] overflow-y-auto pr-4">
-                            <h2 class="text-2xl font-bold text-gray-800 dark:text-white sticky top-0 bg-white dark:bg-gray-800 pb-4 z-10">
+                            <h2 id="admin-edit-form-title" class="text-2xl font-bold text-gray-800 dark:text-white sticky top-0 bg-white dark:bg-gray-800 pb-4 z-10">
                                 ✏️ Édition du jeu
                             </h2>
 
@@ -3404,32 +3419,18 @@ function startListeningToCommands() {
             }, 2000);
         }
 
-        // Écouter les commandes de reprise pour chaque étape
-        if (command.type && command.type.startsWith('resume_from_stage_') && command.timestamp > (Date.now() - 5000)) {
-            console.log('▶️ Commande de reprise reçue:', command.type);
-            gamePaused = false;
-            currentStage = 0;
-
-            // Retourner immédiatement à l'écran des coffres
-            showScreen('boxes-screen');
-            renderBoxes();
-
-            // Afficher un message de confirmation
-            showCustomAlert('▶️ Le superviseur a repris le jeu ! Vous pouvez continuer.');
-        }
-
-        // Commande générique de reprise (pour compatibilité)
+        // Commande de reprise
         if (command.type === 'resume_game' && command.timestamp > (Date.now() - 5000)) {
             console.log('▶️ Commande resume_game reçue !');
-            gamePaused = false;
-            currentStage = 0;
 
-            // Retourner immédiatement à l'écran des coffres
-            showScreen('boxes-screen');
-            renderBoxes();
-
-            // Afficher un message de confirmation
-            showCustomAlert('▶️ Le superviseur a repris le jeu ! Vous pouvez continuer.');
+            // Si on est sur l'écran de pause, retourner à l'écran des coffres
+            const pauseScreen = document.getElementById('stage-pause-screen');
+            if (pauseScreen && !pauseScreen.classList.contains('hidden')) {
+                console.log('✅ Reprise depuis l\'écran de pause');
+                showScreen('boxes-screen');
+                renderBoxes();
+                showCustomAlert('▶️ Le formateur a repris le jeu ! Vous pouvez continuer.');
+            }
         }
     });
 }
@@ -3676,6 +3677,14 @@ window.addEventListener('DOMContentLoaded', () => {
         );
     });
 
+    // Bouton Reprendre le jeu (Superviseur)
+    document.getElementById('resume-game-btn').addEventListener('click', () => {
+        playSound('tick');
+        console.log('▶️ Envoi de la commande resume_game');
+        sendCommand('resume_game');
+        showCustomAlert('▶️ Signal de reprise envoyé à toutes les équipes !');
+    });
+
     // Fonction globale de réinitialisation (appelée par onclick)
     window.resetAllData = function() {
         console.log('🔄 resetAllData() appelée');
@@ -3735,6 +3744,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     let adminCurrentBox = null;
     let adminCurrentGameIndex = null;
+    let adminCurrentVariation = null;
 
     // Bouton pour ouvrir le mode ADMIN
     document.getElementById('admin-mode-btn').addEventListener('click', () => {
@@ -3748,6 +3758,7 @@ window.addEventListener('DOMContentLoaded', () => {
         showScreen('supervisor-screen');
         adminCurrentBox = null;
         adminCurrentGameIndex = null;
+        adminCurrentVariation = null;
     });
 
     // Afficher l'écran ADMIN
@@ -3823,68 +3834,71 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // Les games peuvent être un tableau de tableaux (variations) ou un tableau simple
             box.games.forEach((gameOrVariations, gameIndex) => {
-                // Si c'est un tableau de variations, on prend le premier jeu
-                const game = Array.isArray(gameOrVariations) ? gameOrVariations[0] : gameOrVariations;
+                // Si c'est un tableau de variations, créer un bouton pour CHAQUE variation
+                const gamesArray = Array.isArray(gameOrVariations) ? gameOrVariations : [gameOrVariations];
 
-                if (!game || !game.type) return; // Ignorer les jeux invalides
+                gamesArray.forEach((game, variationIndex) => {
+                    if (!game || !game.type) return; // Ignorer les jeux invalides
 
-                // Filtre par type
-                if (adminTypeFilter !== 'all') {
-                    // Normaliser les types pour la comparaison
-                    const gameTypeNormalized = game.type.toLowerCase();
-                    const filterTypeNormalized = adminTypeFilter.toLowerCase();
+                    // Filtre par type
+                    if (adminTypeFilter !== 'all') {
+                        // Normaliser les types pour la comparaison
+                        const gameTypeNormalized = game.type.toLowerCase();
+                        const filterTypeNormalized = adminTypeFilter.toLowerCase();
 
-                    // Vérifier si le type correspond
-                    if (gameTypeNormalized !== filterTypeNormalized) {
-                        // Vérifier aussi les variantes (quiz-multi = quiz, quiz-illustrated = quiz)
-                        const gameTypeBase = gameTypeNormalized.replace(/-illustrated|-multi/g, '');
-                        const filterTypeBase = filterTypeNormalized.replace(/-illustrated|-multi/g, '');
-                        if (gameTypeBase !== filterTypeBase) {
+                        // Vérifier si le type correspond
+                        if (gameTypeNormalized !== filterTypeNormalized) {
+                            // Vérifier aussi les variantes (quiz-multi = quiz, quiz-illustrated = quiz)
+                            const gameTypeBase = gameTypeNormalized.replace(/-illustrated|-multi/g, '');
+                            const filterTypeBase = filterTypeNormalized.replace(/-illustrated|-multi/g, '');
+                            if (gameTypeBase !== filterTypeBase) {
+                                return; // Ne pas afficher ce jeu
+                            }
+                        }
+                    }
+
+                    // Filtre par recherche
+                    if (adminSearchQuery) {
+                        const searchLower = adminSearchQuery.toLowerCase();
+                        const title = (game.title || '').toLowerCase();
+                        const question = (game.question || '').toLowerCase();
+                        const type = (game.type || '').toLowerCase();
+
+                        if (!title.includes(searchLower) &&
+                            !question.includes(searchLower) &&
+                            !type.includes(searchLower)) {
                             return; // Ne pas afficher ce jeu
                         }
                     }
-                }
 
-                // Filtre par recherche
-                if (adminSearchQuery) {
-                    const searchLower = adminSearchQuery.toLowerCase();
-                    const title = (game.title || '').toLowerCase();
-                    const question = (game.question || '').toLowerCase();
-                    const type = (game.type || '').toLowerCase();
+                    const gameLabel = gameTypeLabels[game.type] || game.type || '❓';
+                    const gameTitle = game.title || game.question || 'Sans titre';
 
-                    if (!title.includes(searchLower) &&
-                        !question.includes(searchLower) &&
-                        !type.includes(searchLower)) {
-                        return; // Ne pas afficher ce jeu
-                    }
-                }
+                    // Tronquer le titre si trop long
+                    const displayTitle = gameTitle.length > 45 ? gameTitle.substring(0, 42) + '...' : gameTitle;
 
-                const gameLabel = gameTypeLabels[game.type] || game.type || '❓';
-                const gameTitle = game.title || game.question || 'Sans titre';
+                    // Badge pour indiquer la variation (1/4, 2/4, etc.)
+                    const variationBadge = gamesArray.length > 1 ?
+                        `<span class="ml-1 px-1.5 py-0.5 bg-purple-500 text-white text-[10px] rounded-full">${variationIndex + 1}/${gamesArray.length}</span>` : '';
 
-                // Tronquer le titre si trop long
-                const displayTitle = gameTitle.length > 45 ? gameTitle.substring(0, 42) + '...' : gameTitle;
-
-                // Compter les variations
-                const variationsCount = Array.isArray(gameOrVariations) ? gameOrVariations.length : 1;
-                const variationsBadge = variationsCount > 1 ? `<span class="ml-1 px-1.5 py-0.5 bg-purple-500 text-white text-[10px] rounded-full">${variationsCount} var.</span>` : '';
-
-                boxHTML += `
-                    <button
-                        class="admin-game-btn w-full text-left px-3 py-2 bg-gray-50 dark:bg-gray-700 hover:bg-primary hover:text-white dark:hover:bg-primary rounded-lg transition-all text-xs group"
-                        data-box="${boxIndex}"
-                        data-game="${gameIndex}"
-                        title="${gameTitle}${variationsCount > 1 ? ' (' + variationsCount + ' variations)' : ''}"
-                    >
-                        <div class="flex items-start gap-2">
-                            <span class="text-sm flex-shrink-0">${gameLabel}</span>
-                            <span class="flex-1 line-clamp-2">${displayTitle}</span>
-                            ${variationsBadge}
-                        </div>
-                    </button>
-                `;
-                boxGamesCount++;
-                totalGamesDisplayed++;
+                    boxHTML += `
+                        <button
+                            class="admin-game-btn w-full text-left px-3 py-2 bg-gray-50 dark:bg-gray-700 hover:bg-primary hover:text-white dark:hover:bg-primary rounded-lg transition-all text-xs group"
+                            data-box="${boxIndex}"
+                            data-game="${gameIndex}"
+                            data-variation="${variationIndex}"
+                            title="${gameTitle} ${gamesArray.length > 1 ? '(Variation ' + (variationIndex + 1) + '/' + gamesArray.length + ')' : ''}"
+                        >
+                            <div class="flex items-start gap-2">
+                                <span class="text-sm flex-shrink-0">${gameLabel}</span>
+                                <span class="flex-1 line-clamp-2">${displayTitle}</span>
+                                ${variationBadge}
+                            </div>
+                        </button>
+                    `;
+                    boxGamesCount++;
+                    totalGamesDisplayed++;
+                });
             });
 
             boxHTML += '</div>';
@@ -3921,7 +3935,8 @@ window.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => {
                 const boxIndex = parseInt(btn.dataset.box);
                 const gameIndex = parseInt(btn.dataset.game);
-                loadGameInEditor(boxIndex, gameIndex);
+                const variationIndex = parseInt(btn.dataset.variation || 0);
+                loadGameInEditor(boxIndex, gameIndex, variationIndex);
             });
         });
     }
@@ -3952,14 +3967,15 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // Charger un jeu dans l'éditeur
-    function loadGameInEditor(boxIndex, gameIndex) {
+    function loadGameInEditor(boxIndex, gameIndex, variationIndex = 0) {
         adminCurrentBox = boxIndex;
         adminCurrentGameIndex = gameIndex;
+        adminCurrentVariation = variationIndex;
 
         const gameOrVariations = boxesData[boxIndex].games[gameIndex];
 
-        // Si c'est un tableau de variations, on édite le premier jeu (par défaut)
-        const game = Array.isArray(gameOrVariations) ? gameOrVariations[0] : gameOrVariations;
+        // Si c'est un tableau de variations, on édite la variation spécifiée
+        const game = Array.isArray(gameOrVariations) ? gameOrVariations[variationIndex] : gameOrVariations;
 
         if (!game || !game.type) {
             showCustomAlert('❌ Erreur : Jeu invalide');
@@ -3969,6 +3985,13 @@ window.addEventListener('DOMContentLoaded', () => {
         // Afficher le formulaire d'édition
         document.getElementById('admin-no-selection').classList.add('hidden');
         document.getElementById('admin-edit-form').classList.remove('hidden');
+
+        // Mettre à jour le titre avec l'information de variation
+        const totalVariations = Array.isArray(gameOrVariations) ? gameOrVariations.length : 1;
+        const variationBadge = totalVariations > 1
+            ? ` <span class="ml-2 px-3 py-1 bg-purple-500 text-white text-sm rounded-full">Variante ${variationIndex + 1}/${totalVariations}</span>`
+            : '';
+        document.getElementById('admin-edit-form-title').innerHTML = `✏️ Édition du jeu${variationBadge}`;
 
         // Remplir les champs de base
         document.getElementById('admin-type').value = game.type || '';
@@ -4106,8 +4129,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const gameOrVariations = boxesData[adminCurrentBox].games[adminCurrentGameIndex];
 
-        // Si c'est un tableau de variations, on édite le premier jeu
-        const game = Array.isArray(gameOrVariations) ? gameOrVariations[0] : gameOrVariations;
+        // Si c'est un tableau de variations, on édite la variation spécifiée
+        const variationIndex = adminCurrentVariation || 0;
+        const game = Array.isArray(gameOrVariations) ? gameOrVariations[variationIndex] : gameOrVariations;
 
         if (!game) {
             showCustomAlert('❌ Erreur : Impossible de sauvegarder');
@@ -4165,6 +4189,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('admin-edit-form').classList.add('hidden');
         adminCurrentBox = null;
         adminCurrentGameIndex = null;
+        adminCurrentVariation = null;
     });
 
     // Bouton Exporter
@@ -4504,6 +4529,9 @@ function updateSupervisorDisplay() {
             `;
         }
 
+        // Vérifier si l'équipe est en pause (multiples de 2 coffres et pas terminé)
+        const isPaused = !team.isFinished && team.boxesUnlocked % 2 === 0 && team.boxesUnlocked > 0 && team.boxesUnlocked < boxesData.length;
+
         teamDiv.innerHTML = `
             <div class="glass-morphism rounded-2xl p-4 shadow-xl relative">
                 ${rankBadge}
@@ -4511,6 +4539,7 @@ function updateSupervisorDisplay() {
                     <div class="text-lg font-bold text-gray-800 dark:text-white">${team.teamName}</div>
                     <div class="text-sm text-gray-600 dark:text-gray-400">${team.totalScore} pts</div>
                     ${team.isFinished ? '<div class="text-xs text-green-600 font-semibold">✓ Terminé</div>' : ''}
+                    ${isPaused ? '<div class="text-xs text-orange-600 dark:text-orange-400 font-semibold animate-pulse">⏸️ En pause (Étape ' + (team.boxesUnlocked / 2) + ')</div>' : ''}
                 </div>
 
                 <div class="progress-bar-vertical">
@@ -4697,6 +4726,20 @@ function renderBoxes() {
 
         if (isCurrent || isUnlocked) {
             boxElement.addEventListener('click', () => {
+                // Vérifier si on est en pause AVANT de permettre de jouer
+                const isPausedNow = gameState.boxesUnlocked % 2 === 0 && gameState.boxesUnlocked > 0 && gameState.boxesUnlocked < boxesData.length;
+
+                if (isPausedNow && index === gameState.boxesUnlocked) {
+                    // On est en pause et on essaie de cliquer sur le coffre suivant
+                    console.log('🚫 Clic bloqué - En pause à l\'étape', gameState.boxesUnlocked / 2);
+                    playSound('wrong');
+                    showCustomAlert('⏸️ Le jeu est en pause ! Attendez que le formateur reprenne le jeu.');
+                    // Afficher l'écran de pause au cas où l'utilisateur serait revenu aux coffres manuellement
+                    const stageNumber = gameState.boxesUnlocked / 2;
+                    showStagePauseScreen(stageNumber);
+                    return;
+                }
+
                 playSound('tick');
                 createChestOpenEffect(boxElement); // Effet de particules !
                 gameState.currentBoxIndex = index;
@@ -5826,14 +5869,35 @@ function unlockBox() {
 
     broadcastUpdate();
 
+    // Vérifier si on doit mettre en pause après 2 coffres (étapes de 2 coffres)
+    const shouldPause = gameState.boxesUnlocked % 2 === 0 && gameState.boxesUnlocked < boxesData.length;
+
+    console.log('🔍 Vérification pause:', {
+        boxesUnlocked: gameState.boxesUnlocked,
+        modulo: gameState.boxesUnlocked % 2,
+        totalBoxes: boxesData.length,
+        shouldPause: shouldPause
+    });
+
+    // Si on doit se mettre en pause, le faire immédiatement après 1 seconde (pour laisser le temps de voir le message de succès)
+    // Sinon, attendre 3 secondes comme d'habitude
+    const delay = shouldPause ? 1000 : 3000;
+
     setTimeout(() => {
         if (gameState.boxesUnlocked >= boxesData.length) {
+            console.log('🏁 Fin du jeu - tous les coffres déverrouillés');
             endGame();
+        } else if (shouldPause) {
+            // Mise en pause automatique après 2 coffres
+            const stageNumber = gameState.boxesUnlocked / 2;
+            console.log(`⏸️ AFFICHAGE ÉCRAN DE PAUSE - Étape ${stageNumber}`);
+            showStagePauseScreen(stageNumber);
         } else {
+            console.log('📦 Retour à l\'écran des coffres');
             showScreen('boxes-screen');
             renderBoxes();
         }
-    }, 3000);
+    }, delay);
 }
 
 // Vérifier si cette équipe est la première à compléter cette étape
@@ -5944,22 +6008,20 @@ function updateGameDisplay() {
 
 // ==================== ÉCRAN DE PAUSE D'ÉTAPE ====================
 
-function showStagePauseScreen(stageNumber, stageData) {
+function showStagePauseScreen(stageNumber) {
     stopTimer();
     playSound('complete');
+
+    console.log(`⏸️ Pause automatique après l'étape ${stageNumber} (${gameState.boxesUnlocked} coffres déverrouillés)`);
 
     // Afficher l'écran de pause
     showScreen('stage-pause-screen');
 
     // Mettre à jour les informations de l'étape
     document.getElementById('stage-number').textContent = stageNumber;
-    document.getElementById('first-team-name').textContent = stageData.firstTeam || 'Équipe';
-
-    // Récupérer et afficher le classement pour cette étape
-    updateStageRankings(stageNumber);
-
-    // Rafraîchir les coffres en arrière-plan pour qu'ils soient bloqués
-    renderBoxes();
+    document.getElementById('stage-score').textContent = gameState.totalScore || 0;
+    document.getElementById('stage-boxes-unlocked').textContent = gameState.boxesUnlocked || 0;
+    document.getElementById('stage-boxes-remaining').textContent = (boxesData.length - gameState.boxesUnlocked) || 0;
 }
 
 function updateStageRankings(stageNumber) {
