@@ -5829,36 +5829,31 @@ function validateAnswer(isCorrect) {
 
         createConfetti();
 
-        // Afficher d'abord un message simple
+        // 1. Afficher d'abord un message simple
         showFeedback(`✓ Bonne réponse !`, 'success');
 
-        // Attendre 5 secondes avant d'afficher le panneau de points détaillé
+        // 2. Attendre 2.5s puis afficher l'explication pendant 5 secondes
         setTimeout(() => {
-            // Créer le panneau de points détaillé (HTML simple, bien rendu)
-            const pointsDetail = `
-                <div style="text-align: center;">
-                    <div style="font-size: 2rem; margin-bottom: 1.5rem;">🎉 +${points} points !</div>
-                    <div style="font-size: 1.1rem; line-height: 2;">
-                        <div>Points de base : <strong>+${basePoints}</strong></div>
-                        <div>Bonus de rapidité : <strong style="color: #fbbf24;">+${timeBonus}</strong></div>
-                        <div>Bonus ${gameState.attempts} essai(s) : <strong style="color: #fb923c;">+${attemptsBonus}</strong></div>
-                        <div style="border-top: 2px solid rgba(255,255,255,0.3); margin: 1rem 0; padding-top: 1rem;">
-                            <strong style="font-size: 1.3rem;">Total : ${points} pts</strong>
-                        </div>
-                        <div style="font-size: 0.9rem; margin-top: 1rem; opacity: 0.9;">
-                            Score total : ${gameState.totalScore} points
-                        </div>
-                    </div>
-                </div>
-            `;
-            showFeedback(pointsDetail, 'success');
-        }, 5000);
+            if (currentGame.explanation) {
+                const correctAnswerHTML = getCorrectAnswerText(currentGame);
+                const explanationHTML = `
+                    ${correctAnswerHTML}
+                    ${currentGame.explanation ? `<div class="mt-4 text-base leading-relaxed">${currentGame.explanation}</div>` : ''}
+                `;
+                showFeedbackWithAnswer(`📖 Explication`, explanationHTML, 'success');
+            }
+        }, 2500);
 
-        // Charger le prochain jeu après 8 secondes (5s explication + 3s panneau)
+        // 3. Attendre 7.5s (2.5 + 5) puis afficher le panneau de points simple
+        setTimeout(() => {
+            showFeedback(`🎉 +${points} points !`, 'success');
+        }, 7500);
+
+        // 4. Charger le prochain jeu après 10 secondes total (2.5 + 5 + 2.5)
         setTimeout(() => {
             gameState.currentGameIndex++;
             loadBoxGame();
-        }, 8000);
+        }, 10000);
     } else {
         playSound('wrong'); // Son "wrong" au lieu de "error"
         gameState.attempts--;
