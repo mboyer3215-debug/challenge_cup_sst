@@ -4108,10 +4108,22 @@ window.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(itemDiv);
             });
         } else if (game.type === 'puzzle-text') {
-            container.innerHTML = `
-                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Texte du puzzle</label>
-                <textarea id="admin-puzzle-text" rows="4" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-base">${game.text || ''}</textarea>
-            `;
+            container.innerHTML = '<label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Morceaux du puzzle (dans le bon ordre)</label>';
+
+            game.pieces.forEach((piece, index) => {
+                const pieceDiv = document.createElement('div');
+                pieceDiv.className = 'flex items-center gap-2 mb-2';
+                pieceDiv.innerHTML = `
+                    <span class="text-gray-600 dark:text-gray-400 font-semibold w-8">${index + 1}.</span>
+                    <input
+                        type="text"
+                        class="admin-puzzle-piece-input flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-base"
+                        data-index="${index}"
+                        value="${piece}"
+                    >
+                `;
+                container.appendChild(pieceDiv);
+            });
         }
     }
 
@@ -4148,7 +4160,7 @@ window.addEventListener('DOMContentLoaded', () => {
             `;
         } else if (game.type === 'sequence' || game.type === 'puzzle-text') {
             const correctOrder = game.correctOrder || [];
-            const items = game.items || game.text?.split(' ') || [];
+            const items = game.items || game.pieces || [];
             const orderedItems = correctOrder.map(i => items[i] || `[${i}]`).join(' → ');
             container.innerHTML = `
                 <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Ordre correct (indices séparés par des virgules)</label>
@@ -4219,7 +4231,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 game.correctOrder = correctOrderStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
             }
         } else if (game.type === 'puzzle-text') {
-            game.text = document.getElementById('admin-puzzle-text').value;
+            const puzzlePieceInputs = document.querySelectorAll('.admin-puzzle-piece-input');
+            game.pieces = Array.from(puzzlePieceInputs).map(input => input.value);
             // Sauvegarder l'ordre correct
             const correctOrderInput = document.getElementById('admin-correctOrder');
             if (correctOrderInput) {
