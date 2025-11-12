@@ -5987,28 +5987,33 @@ function validateAnswer(isCorrect) {
         // 1. Afficher d'abord un message simple (flash 1,5s)
         showFeedback(`✓ Bonne réponse !`, 'success');
 
-        // 2. Attendre 1.5s puis afficher l'explication pendant 5 secondes
-        setTimeout(() => {
-            if (currentGame.explanation) {
+        // Adapter les délais selon s'il y a une explication ou non
+        const hasExplanation = currentGame.explanation && currentGame.explanation.trim().length > 0;
+        const pointsDelay = hasExplanation ? 6500 : 1500; // Avec explication: 6.5s, sans: 1.5s
+        const nextGameDelay = hasExplanation ? 8000 : 3000; // Avec explication: 8s, sans: 3s
+
+        // 2. Afficher l'explication si elle existe (après 1.5s, pendant 5s)
+        if (hasExplanation) {
+            setTimeout(() => {
                 const correctAnswerHTML = getCorrectAnswerText(currentGame);
                 const explanationHTML = `
                     ${correctAnswerHTML}
-                    ${currentGame.explanation ? `<div class="mt-4 text-base leading-relaxed">${currentGame.explanation}</div>` : ''}
+                    <div class="mt-4 text-base leading-relaxed">${currentGame.explanation}</div>
                 `;
                 showFeedbackWithAnswer(`📖 Explication`, explanationHTML, 'success');
-            }
-        }, 1500);
+            }, 1500);
+        }
 
-        // 3. Attendre 6.5s (1.5 + 5) puis afficher le panneau de points simple (flash 1,5s)
+        // 3. Afficher les points (timing adapté selon présence d'explication)
         setTimeout(() => {
             showFeedback(`🎉 +${points} points !`, 'success');
-        }, 6500);
+        }, pointsDelay);
 
-        // 4. Charger le prochain jeu après 8 secondes total (1.5 + 5 + 1.5)
+        // 4. Charger le prochain jeu (timing adapté selon présence d'explication)
         setTimeout(() => {
             gameState.currentGameIndex++;
             loadBoxGame();
-        }, 8000);
+        }, nextGameDelay);
     } else {
         playSound('wrong'); // Son "wrong" au lieu de "error"
         gameState.attempts--;
