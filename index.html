@@ -627,6 +627,9 @@
                                 <button id="admin-save-btn" class="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all shadow-lg">
                                     💾 Enregistrer les modifications
                                 </button>
+                                <button id="admin-delete-btn" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all">
+                                    🗑️ Supprimer
+                                </button>
                                 <button id="admin-cancel-btn" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-all">
                                     ❌ Annuler
                                 </button>
@@ -3878,24 +3881,31 @@ window.addEventListener('DOMContentLoaded', () => {
                     const gameLabel = gameTypeLabels[game.type] || game.type || '❓';
                     const gameTitle = game.title || game.question || 'Sans titre';
 
+                    // Ajouter le numéro de variante au titre si plusieurs variantes existent
+                    const titleWithVariation = gamesArray.length > 1
+                        ? `[${variationIndex + 1}/${gamesArray.length}] ${gameTitle}`
+                        : gameTitle;
+
                     // Tronquer le titre si trop long
-                    const displayTitle = gameTitle.length > 45 ? gameTitle.substring(0, 42) + '...' : gameTitle;
+                    const displayTitle = titleWithVariation.length > 50 ? titleWithVariation.substring(0, 47) + '...' : titleWithVariation;
 
                     // Badge pour indiquer la variation (1/4, 2/4, etc.)
                     const variationBadge = gamesArray.length > 1 ?
-                        `<span class="ml-1 px-1.5 py-0.5 bg-purple-500 text-white text-[10px] rounded-full">${variationIndex + 1}/${gamesArray.length}</span>` : '';
+                        `<span class="ml-1 px-1.5 py-0.5 bg-purple-500 text-white text-[10px] rounded-full font-bold">${variationIndex + 1}/${gamesArray.length}</span>` : '';
 
                     boxHTML += `
                         <button
-                            class="admin-game-btn w-full text-left px-3 py-2 bg-gray-50 dark:bg-gray-700 hover:bg-primary hover:text-white dark:hover:bg-primary rounded-lg transition-all text-xs group"
+                            class="admin-game-btn w-full text-left px-3 py-2 bg-gray-50 dark:bg-gray-700 hover:bg-primary hover:text-white dark:hover:bg-primary rounded-lg transition-all text-xs group mb-1"
                             data-box="${boxIndex}"
                             data-game="${gameIndex}"
                             data-variation="${variationIndex}"
-                            title="${gameTitle} ${gamesArray.length > 1 ? '(Variation ' + (variationIndex + 1) + '/' + gamesArray.length + ')' : ''}"
+                            title="${titleWithVariation}"
                         >
-                            <div class="flex items-start gap-2">
-                                <span class="text-sm flex-shrink-0">${gameLabel}</span>
-                                <span class="flex-1 line-clamp-2">${displayTitle}</span>
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-start gap-2 flex-1 min-w-0">
+                                    <span class="text-sm flex-shrink-0">${gameLabel}</span>
+                                    <span class="flex-1 line-clamp-2 truncate">${displayTitle}</span>
+                                </div>
                                 ${variationBadge}
                             </div>
                         </button>
@@ -3937,9 +3947,17 @@ window.addEventListener('DOMContentLoaded', () => {
         // Ajouter les événements sur les boutons de jeu
         document.querySelectorAll('.admin-game-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const boxIndex = parseInt(btn.dataset.box);
-                const gameIndex = parseInt(btn.dataset.game);
-                const variationIndex = parseInt(btn.dataset.variation || 0);
+                const boxIndex = parseInt(btn.getAttribute('data-box'));
+                const gameIndex = parseInt(btn.getAttribute('data-game'));
+                const variationIndex = parseInt(btn.getAttribute('data-variation') || '0');
+                console.log('🔍 Clic sur bouton:', {
+                    boxIndex,
+                    gameIndex,
+                    variationIndex,
+                    rawDataBox: btn.getAttribute('data-box'),
+                    rawDataGame: btn.getAttribute('data-game'),
+                    rawDataVariation: btn.getAttribute('data-variation')
+                });
                 loadGameInEditor(boxIndex, gameIndex, variationIndex);
             });
         });
@@ -3972,14 +3990,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Charger un jeu dans l'éditeur
     function loadGameInEditor(boxIndex, gameIndex, variationIndex = 0) {
+        console.log('📝 loadGameInEditor appelé:', { boxIndex, gameIndex, variationIndex });
+
         adminCurrentBox = boxIndex;
         adminCurrentGameIndex = gameIndex;
         adminCurrentVariation = variationIndex;
 
         const gameOrVariations = boxesData[boxIndex].games[gameIndex];
+        console.log('📦 gameOrVariations:', { isArray: Array.isArray(gameOrVariations), length: Array.isArray(gameOrVariations) ? gameOrVariations.length : 'N/A' });
 
         // Si c'est un tableau de variations, on édite la variation spécifiée
         const game = Array.isArray(gameOrVariations) ? gameOrVariations[variationIndex] : gameOrVariations;
+        console.log('🎮 Game chargé:', { title: game?.title, question: game?.question, variationIndex });
 
         if (!game || !game.type) {
             showCustomAlert('❌ Erreur : Jeu invalide');
@@ -4124,6 +4146,21 @@ window.addEventListener('DOMContentLoaded', () => {
                 >
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Les bonnes réponses sont : ${correctAnswersArray.map(i => game.options[i]).join(', ')}</p>
             `;
+        } else if (game.type === 'sequence' || game.type === 'puzzle-text') {
+            const correctOrder = game.correctOrder || [];
+            const items = game.items || game.text?.split(' ') || [];
+            const orderedItems = correctOrder.map(i => items[i] || `[${i}]`).join(' → ');
+            container.innerHTML = `
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Ordre correct (indices séparés par des virgules)</label>
+                <input
+                    type="text"
+                    id="admin-correctOrder"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-base"
+                    value="${correctOrder.join(',')}"
+                    placeholder="Ex: 0,1,2,3"
+                >
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ordre actuel : ${orderedItems || 'Non défini'}</p>
+            `;
         }
     }
 
@@ -4175,8 +4212,20 @@ window.addEventListener('DOMContentLoaded', () => {
         } else if (game.type === 'sequence') {
             const sequenceInputs = document.querySelectorAll('.admin-sequence-input');
             game.items = Array.from(sequenceInputs).map(input => input.value);
+            // Sauvegarder l'ordre correct
+            const correctOrderInput = document.getElementById('admin-correctOrder');
+            if (correctOrderInput) {
+                const correctOrderStr = correctOrderInput.value;
+                game.correctOrder = correctOrderStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            }
         } else if (game.type === 'puzzle-text') {
             game.text = document.getElementById('admin-puzzle-text').value;
+            // Sauvegarder l'ordre correct
+            const correctOrderInput = document.getElementById('admin-correctOrder');
+            if (correctOrderInput) {
+                const correctOrderStr = correctOrderInput.value;
+                game.correctOrder = correctOrderStr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            }
         }
 
         playSound('success');
@@ -4194,6 +4243,65 @@ window.addEventListener('DOMContentLoaded', () => {
         adminCurrentBox = null;
         adminCurrentGameIndex = null;
         adminCurrentVariation = null;
+    });
+
+    // Bouton Supprimer
+    document.getElementById('admin-delete-btn').addEventListener('click', () => {
+        if (adminCurrentBox === null || adminCurrentGameIndex === null) return;
+
+        const gameOrVariations = boxesData[adminCurrentBox].games[adminCurrentGameIndex];
+        const variationIndex = adminCurrentVariation || 0;
+        const isArray = Array.isArray(gameOrVariations);
+        const totalVariations = isArray ? gameOrVariations.length : 1;
+
+        let confirmMessage = '';
+        if (isArray && totalVariations > 1) {
+            confirmMessage = `Voulez-vous supprimer la variante ${variationIndex + 1}/${totalVariations} de ce jeu ?`;
+        } else {
+            confirmMessage = `Voulez-vous supprimer ce jeu ? Cette action est irréversible.`;
+        }
+
+        // Créer une modal de confirmation personnalisée
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">⚠️ Confirmation de suppression</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-6">${confirmMessage}</p>
+                <div class="flex justify-end space-x-3">
+                    <button id="modal-cancel" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">Annuler</button>
+                    <button id="modal-confirm" class="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded">Supprimer</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('modal-cancel').onclick = () => {
+            playSound('tick');
+            modal.remove();
+        };
+
+        document.getElementById('modal-confirm').onclick = () => {
+            if (isArray && totalVariations > 1) {
+                // Supprimer uniquement la variante
+                boxesData[adminCurrentBox].games[adminCurrentGameIndex].splice(variationIndex, 1);
+                playSound('success');
+                showCustomAlert(`✅ Variante ${variationIndex + 1} supprimée avec succès !`);
+            } else {
+                // Supprimer tout le jeu
+                boxesData[adminCurrentBox].games.splice(adminCurrentGameIndex, 1);
+                playSound('success');
+                showCustomAlert('✅ Jeu supprimé avec succès !');
+            }
+
+            modal.remove();
+            document.getElementById('admin-no-selection').classList.remove('hidden');
+            document.getElementById('admin-edit-form').classList.add('hidden');
+            adminCurrentBox = null;
+            adminCurrentGameIndex = null;
+            adminCurrentVariation = null;
+            renderAdminBoxesList();
+        };
     });
 
     // Bouton Exporter
