@@ -329,6 +329,9 @@
             <div class="text-center mb-6">
                 <h1 class="text-4xl md:text-5xl font-bold text-primary neon-text mb-2">👨‍🏫 Tableau de Bord Superviseur</h1>
                 <p class="text-lg text-gray-600 dark:text-gray-400">Progression en temps réel</p>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-500 font-mono">
+                    Session: <span id="training-session-display"></span>
+                </div>
                 <div class="mt-4 flex flex-wrap justify-center gap-3">
                     <button id="back-to-login-supervisor" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-all">
                         ← Retour
@@ -773,6 +776,14 @@ function checkAuthentication() {
     // Vérifier d'abord si c'est un accès joueur via QR code
     const urlParams = new URLSearchParams(window.location.search);
     const mode = urlParams.get('mode');
+    const sessionParam = urlParams.get('session');
+
+    // Si un sessionId est fourni dans l'URL, l'utiliser
+    if (sessionParam) {
+        trainingSessionId = sessionParam;
+        sessionId = trainingSessionId;
+        console.log('🔗 Utilisation du trainingSessionId depuis l\'URL:', trainingSessionId);
+    }
 
     if (mode === 'player') {
         // Accès joueur direct via QR code - pas besoin de mot de passe
@@ -855,8 +866,11 @@ const firebaseConfig = {
 // Variables Firebase
 let database = null;
 // Session ID global partagé par toutes les équipes d'une même formation
-// Utilisé pour coordonner les étapes entre équipes
-let sessionId = 'formation_' + new Date().toISOString().split('T')[0]; // Format: formation_2025-01-15
+// Le trainingSessionId est commun à toute la formation, tandis que teamId est unique par équipe
+let trainingSessionId = 'training_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+// Le teamId sera généré à partir du nom de l'équipe quand elle se connecte
+let teamId = null;
+let sessionId = trainingSessionId; // Pour compatibilité avec le code existant
 
 // Initialiser Firebase (après le chargement de la page)
 function initializeFirebase() {
@@ -876,7 +890,7 @@ function initializeFirebase() {
         firebase.initializeApp(firebaseConfig);
         database = firebase.database();
         console.log('✅ Firebase initialisé avec succès');
-        console.log('🆔 Session de formation:', sessionId);
+        console.log('🆔 Session de formation:', trainingSessionId);
         console.log('🔗 Database URL:', firebaseConfig.databaseURL);
 
         // Test de connexion
@@ -3366,7 +3380,8 @@ function broadcastUpdate() {
 
     const update = {
         type: 'team_update',
-        sessionId: sessionId,
+        trainingSessionId: trainingSessionId, // Session de formation commune
+        teamId: teamId, // ID unique de l'équipe
         teamName: currentTeamName,
         boxesUnlocked: gameState.boxesUnlocked,
         totalScore: gameState.totalScore,
@@ -3386,9 +3401,13 @@ function broadcastUpdate() {
 
     // DEBUG: Afficher ce qu'on envoie à Firebase
     console.log('📤 Envoi à Firebase:', update);
+    console.log('🔑 Clé Firebase utilisée:', 'teams/' + teamId);
+    console.log('🆔 trainingSessionId actuel:', trainingSessionId);
+    console.log('👥 teamId actuel:', teamId);
 
     // Enregistrer dans Firebase Realtime Database
-    database.ref('teams/' + sessionId).set(update).catch(error => {
+    // Chaque équipe a un teamId unique, donc pas de conflit
+    database.ref('teams/' + teamId).set(update).catch(error => {
         console.error('❌ Erreur Firebase:', error);
     });
 }
@@ -3549,6 +3568,7 @@ function generateQRCode() {
 
     const url = new URL(baseUrl);
     url.searchParams.set('mode', 'player');
+    url.searchParams.set('session', trainingSessionId); // Ajouter le trainingSessionId
 
     new QRCode(qrContainer, {
         text: url.toString(),
@@ -3575,6 +3595,10 @@ window.addEventListener('DOMContentLoaded', () => {
         appMode = 'supervisor';
 
         showScreen('supervisor-screen');
+
+        // Afficher le trainingSessionId dans l'interface
+        document.getElementById('training-session-display').textContent = trainingSessionId;
+
         loadTeamsFromFirebase();
 
         // Écouter les changements en temps réel
@@ -3598,6 +3622,12 @@ window.addEventListener('DOMContentLoaded', () => {
         playSound('tick');
         currentTeamName = teamName;
         appMode = 'player';
+
+        // Générer un teamId unique basé sur le trainingSessionId et le nom de l'équipe
+        // Cela permet à une équipe de reprendre son jeu si elle recharge la page
+        const teamNameHash = teamName.toLowerCase().replace(/\s+/g, '_');
+        teamId = trainingSessionId + '_' + teamNameHash;
+        console.log('👥 Team ID créé:', teamId);
 
         // DEBUG: Vérifier gameState AVANT reset
         console.log('🔍 AVANT resetGameState():', {
@@ -4567,7 +4597,24 @@ function safeUpdateDisplay() {
 
 function updateSupervisorDisplay() {
     const container = document.getElementById('teams-progress-container');
-    const teamsArray = Object.values(teams);
+
+    // DEBUG: Afficher TOUTES les équipes reçues
+    console.log('🔍 Toutes les équipes Firebase:', teams);
+    console.log('🆔 trainingSessionId du superviseur:', trainingSessionId);
+
+    // Filtrer seulement les équipes de cette session de formation
+    const teamsArray = Object.values(teams).filter(t => {
+        console.log(`🔎 Vérification équipe "${t.teamName}": trainingSessionId="${t.trainingSessionId}" vs superviseur="${trainingSessionId}" → ${t.trainingSessionId === trainingSessionId}`);
+        return t.trainingSessionId === trainingSessionId;
+    });
+
+    console.log('📊 Mise à jour superviseur:', {
+        trainingSessionId: trainingSessionId,
+        totalTeams: teamsArray.length,
+        teamNames: teamsArray.map(t => t.teamName),
+        allTeams: Object.keys(teams).length,
+        filteredTeams: teamsArray.length
+    });
 
     // Compter les équipes actives et terminées
     const activeTeams = teamsArray.filter(t => !t.isFinished).length;
@@ -5940,7 +5987,7 @@ function validateAnswer(isCorrect) {
         // 1. Afficher d'abord un message simple (flash 1,5s)
         showFeedback(`✓ Bonne réponse !`, 'success');
 
-        // 2. Attendre 1.5s puis afficher l'explication pendant 3 secondes
+        // 2. Attendre 1.5s puis afficher l'explication pendant 5 secondes
         setTimeout(() => {
             if (currentGame.explanation) {
                 const correctAnswerHTML = getCorrectAnswerText(currentGame);
@@ -5952,16 +5999,16 @@ function validateAnswer(isCorrect) {
             }
         }, 1500);
 
-        // 3. Attendre 4.5s (1.5 + 3) puis afficher le panneau de points simple (flash 1,5s)
+        // 3. Attendre 6.5s (1.5 + 5) puis afficher le panneau de points simple (flash 1,5s)
         setTimeout(() => {
             showFeedback(`🎉 +${points} points !`, 'success');
-        }, 4500);
+        }, 6500);
 
-        // 4. Charger le prochain jeu après 6 secondes total (1.5 + 3 + 1.5)
+        // 4. Charger le prochain jeu après 8 secondes total (1.5 + 5 + 1.5)
         setTimeout(() => {
             gameState.currentGameIndex++;
             loadBoxGame();
-        }, 6000);
+        }, 8000);
     } else {
         playSound('wrong'); // Son "wrong" au lieu de "error"
         gameState.attempts--;
@@ -6004,7 +6051,7 @@ function showFeedbackWithAnswer(message, answerHTML, type) {
         </div>
     `;
     document.body.appendChild(feedback);
-    setTimeout(() => feedback.remove(), 3000); // Réduit à 3 secondes
+    setTimeout(() => feedback.remove(), 5000); // Explication visible 5 secondes
 }
 
 function unlockBox() {
@@ -6200,7 +6247,7 @@ function updateStageRankings(stageNumber) {
 
         Object.keys(allTeams).forEach(teamKey => {
             const team = allTeams[teamKey];
-            if (team.sessionId === sessionId && team.boxesUnlocked >= requiredBoxes) {
+            if (team.trainingSessionId === trainingSessionId && team.boxesUnlocked >= requiredBoxes) {
                 teamsArray.push({
                     name: team.teamName,
                     score: team.totalScore,
