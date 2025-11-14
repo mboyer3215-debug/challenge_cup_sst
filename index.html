@@ -447,6 +447,9 @@
                 <button id="validate-btn" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xl font-bold py-5 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
                     ✓ Valider la Réponse
                 </button>
+                <button id="skip-question-btn" class="px-6 bg-gradient-to-r from-yellow-500 to-orange-600 text-white text-xl font-bold py-5 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+                    ⏭️ Passer
+                </button>
                 <button id="reset-answer-btn" class="hidden px-6 bg-gradient-to-r from-orange-500 to-red-600 text-white text-xl font-bold py-5 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
                     🔄 Réinitialiser
                 </button>
@@ -506,9 +509,15 @@
                     <!-- Stats seront ajoutées dynamiquement -->
                 </div>
 
-                <button id="restart-btn" class="bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white text-3xl font-bold py-8 px-16 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 glow">
-                    🔄 Recommencer l'Aventure
-                </button>
+                <div class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Voulez-vous rejouer ?</div>
+                <div class="flex justify-center gap-6">
+                    <button id="restart-yes-btn" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl font-bold py-6 px-12 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300">
+                        ✅ Oui
+                    </button>
+                    <button id="restart-no-btn" class="bg-gradient-to-r from-red-500 to-red-600 text-white text-2xl font-bold py-6 px-12 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300">
+                        ❌ Non
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -987,6 +996,11 @@ const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 // ==================== SONS AMÉLIORÉS ====================
 
 function playSound(type, frequency = null) {
+    // Sons désactivés pour les joueurs (seul le superviseur a le son)
+    if (appMode === 'player') {
+        return; // Pas de son pour les joueurs
+    }
+
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
@@ -2204,12 +2218,13 @@ const gameState = {
     currentVariationIndex: 0, // Index de la variation actuelle (pour recharger la même après reset)
     totalScore: 0,
     gameScore: 0,
-    attempts: 3,
-    maxAttempts: 3,
+    attempts: 1,
+    maxAttempts: 1,
     timeLeft: 60,
     timerInterval: null,
     boxesUnlocked: 0,
     pauseLifted: false, // Indique si le formateur a levé la pause
+    skipQuestionUsed: false, // Bouton "Passer la question" utilisé ou non
     stats: {
         gamesWon: 0,
         gamesLost: 0,
@@ -2575,13 +2590,24 @@ window.addEventListener('DOMContentLoaded', () => {
         updateBoxesDisplay();
     });
 
-    // Bouton recommencer
-    document.getElementById('restart-btn').addEventListener('click', () => {
+    // Bouton "Oui" - Rejouer
+    document.getElementById('restart-yes-btn').addEventListener('click', () => {
         playSound('tick');
         resetGameState();
+        gameState.skipQuestionUsed = false; // Réinitialiser le bouton "Passer"
         showScreen('boxes-screen');
         renderBoxes();
         broadcastUpdate();
+    });
+
+    // Bouton "Non" - Fermer la page
+    document.getElementById('restart-no-btn').addEventListener('click', () => {
+        playSound('tick');
+        window.close(); // Fermer la page
+        // Si window.close() ne fonctionne pas (restrictions navigateur), afficher un message
+        setTimeout(() => {
+            showCustomAlert('Vous pouvez maintenant fermer cet onglet.');
+        }, 100);
     });
 
     // Bouton Arrêter le jeu (Superviseur)
@@ -3484,9 +3510,10 @@ function resetGameState() {
     gameState.currentGameIndex = 0;
     gameState.totalScore = 0;
     gameState.gameScore = 0;
-    gameState.attempts = 3;
+    gameState.attempts = 1;
     gameState.boxesUnlocked = 0;
     gameState.pauseLifted = false;
+    gameState.skipQuestionUsed = false;
     gameState.stats = { gamesWon: 0, gamesLost: 0, totalTime: 0, startTime: Date.now(), endTime: null };
     gameState.currentAnswer = null;
 
@@ -3944,6 +3971,18 @@ function loadBoxGame() {
     container.className = 'glass-morphism rounded-3xl shadow-2xl p-6 md:p-8 bounce-in';
 
     document.getElementById('reset-answer-btn').classList.add('hidden');
+
+    // Réinitialiser le bouton "Passer" si déjà utilisé
+    const skipBtn = document.getElementById('skip-question-btn');
+    if (gameState.skipQuestionUsed) {
+        skipBtn.disabled = true;
+        skipBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        skipBtn.innerHTML = '⏭️ Utilisé';
+    } else {
+        skipBtn.disabled = false;
+        skipBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        skipBtn.innerHTML = '⏭️ Passer';
+    }
 
     switch(game.type) {
         case 'quiz':
@@ -4832,6 +4871,27 @@ function setupValidation(validateFunction) {
         if (isCorrect !== false) {
             validateAnswer(isCorrect);
         }
+    };
+
+    // Bouton "Passer la question" - utilisable une seule fois
+    document.getElementById('skip-question-btn').onclick = () => {
+        if (gameState.skipQuestionUsed) {
+            showCustomAlert('Vous avez déjà utilisé votre passe !');
+            return;
+        }
+
+        playSound('tick');
+        gameState.skipQuestionUsed = true;
+
+        // Désactiver le bouton visuellement
+        const skipBtn = document.getElementById('skip-question-btn');
+        skipBtn.disabled = true;
+        skipBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        skipBtn.innerHTML = '⏭️ Utilisé';
+
+        // Passer à la question suivante sans donner de points
+        stopTimer();
+        moveToNextGame();
     };
 
     document.getElementById('reset-answer-btn').onclick = () => {
