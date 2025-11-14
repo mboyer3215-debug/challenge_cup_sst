@@ -904,6 +904,42 @@ function initializeFirebase() {
             }
         });
 
+        // Charger les données modifiées depuis Firebase (si elles existent)
+        loadBoxesDataFromFirebase()
+            .then(loadedData => {
+                if (loadedData) {
+                    boxesData.length = 0;
+                    boxesData.push(...loadedData);
+                    console.log('🎮 Données du jeu chargées depuis Firebase');
+                } else {
+                    console.log('🎮 Utilisation des données par défaut');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Erreur chargement données:', error);
+                console.log('🎮 Utilisation des données par défaut');
+            });
+
+        // Écouter les modifications admin en temps réel
+        database.ref('admin_config/sst_data').on('value', (snapshot) => {
+            const savedData = snapshot.val();
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    boxesData.length = 0;
+                    boxesData.push(...parsed);
+                    console.log('🔄 Données du jeu mises à jour en temps réel depuis Firebase');
+                } catch (error) {
+                    console.error('❌ Erreur parsing données temps réel:', error);
+                }
+            } else {
+                // Les données ont été supprimées (réinitialisation)
+                boxesData.length = 0;
+                boxesData.push(...JSON.parse(JSON.stringify(defaultBoxesData)));
+                console.log('🔄 Données réinitialisées aux valeurs par défaut');
+            }
+        });
+
         return true;
     } catch (error) {
         console.error('❌ Erreur d\'initialisation Firebase:', error);
@@ -1623,7 +1659,8 @@ function createChestOpenEffect(element) {
 
 // ==================== DONNÉES DU JEU ====================
 
-const boxesData = [
+// Données par défaut du jeu
+const defaultBoxesData = [
     {
         title: 'DC1 - Protéger',
         subtitle: 'Situer son rôle et protéger',
@@ -2081,6 +2118,84 @@ const boxesData = [
     }
 ];
 
+// ==================== PERSISTENCE DES MODIFICATIONS ADMIN ====================
+
+// Sauvegarder les modifications dans Firebase
+function saveBoxesDataToFirebase() {
+    if (!database) {
+        console.error('❌ Firebase non initialisé');
+        return Promise.reject('Firebase non initialisé');
+    }
+
+    try {
+        const dataToSave = JSON.stringify(boxesData);
+        return database.ref('admin_config/sst_data').set(dataToSave)
+            .then(() => {
+                console.log('✅ Modifications sauvegardées dans Firebase');
+                return true;
+            })
+            .catch(error => {
+                console.error('❌ Erreur lors de la sauvegarde Firebase:', error);
+                return false;
+            });
+    } catch (error) {
+        console.error('❌ Erreur lors de la sauvegarde:', error);
+        return Promise.reject(error);
+    }
+}
+
+// Charger les données modifiées depuis Firebase
+function loadBoxesDataFromFirebase() {
+    if (!database) {
+        console.log('⚠️ Firebase non initialisé, utilisation des données par défaut');
+        return Promise.resolve(null);
+    }
+
+    return database.ref('admin_config/sst_data').once('value')
+        .then(snapshot => {
+            const savedData = snapshot.val();
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    console.log('📥 Données modifiées chargées depuis Firebase');
+                    return parsed;
+                } catch (error) {
+                    console.error('❌ Erreur parsing données Firebase:', error);
+                    return null;
+                }
+            }
+            return null;
+        })
+        .catch(error => {
+            console.error('❌ Erreur lors du chargement Firebase:', error);
+            return null;
+        });
+}
+
+// Réinitialiser aux données par défaut
+function resetToDefaultData() {
+    if (!database) {
+        console.error('❌ Firebase non initialisé');
+        return Promise.reject('Firebase non initialisé');
+    }
+
+    return database.ref('admin_config/sst_data').remove()
+        .then(() => {
+            console.log('🔄 Données réinitialisées aux valeurs par défaut');
+            // Recharger les données par défaut
+            boxesData.length = 0;
+            boxesData.push(...JSON.parse(JSON.stringify(defaultBoxesData)));
+            return true;
+        })
+        .catch(error => {
+            console.error('❌ Erreur lors de la réinitialisation:', error);
+            return false;
+        });
+}
+
+// Initialiser boxesData (sera chargé depuis Firebase après l'init)
+let boxesData = JSON.parse(JSON.stringify(defaultBoxesData)); // Deep copy par défaut
+
 // ==================== ÉTAT DU JEU ====================
 
 const gameState = {
@@ -2306,31 +2421,45 @@ function generateQRCode() {
     // Utiliser origin + pathname pour éviter les paramètres existants
     let baseUrl = window.location.origin + window.location.pathname;
 
-    // Si on est en local (file://), afficher un message
+    console.log('🔗 Génération QR Code - Base URL:', baseUrl);
+
+    // Créer l'URL avec les paramètres
+    let finalUrl;
+
+    // Si on est en local (file://), afficher un avertissement mais générer quand même
     if (baseUrl.startsWith('file://')) {
-        qrContainer.innerHTML = `
-            <div class="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                <p class="text-sm text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Mode local détecté</p>
-                <p class="text-xs text-yellow-700 dark:text-yellow-300">
-                    Pour générer le QR code, hébergez d'abord le fichier en ligne<br>
-                    (GitHub Pages, serveur web, etc.)
-                </p>
-            </div>
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-center';
+        warningDiv.innerHTML = `
+            <p class="text-xs text-yellow-800 dark:text-yellow-200 mb-1">⚠️ Mode local - QR code non fonctionnel</p>
+            <p class="text-xs text-yellow-700 dark:text-yellow-300">Hébergez le fichier en ligne (GitHub Pages, etc.)</p>
         `;
-        return;
+        qrContainer.appendChild(warningDiv);
+        // Utiliser l'URL file:// quand même pour affichage
+        finalUrl = baseUrl + '?mode=player&session=' + trainingSessionId;
+    } else {
+        const url = new URL(baseUrl);
+        url.searchParams.set('mode', 'player');
+        url.searchParams.set('session', trainingSessionId);
+        finalUrl = url.toString();
     }
 
-    const url = new URL(baseUrl);
-    url.searchParams.set('mode', 'player');
-    url.searchParams.set('session', trainingSessionId); // Ajouter le trainingSessionId
+    console.log('🔗 URL complète du QR code:', finalUrl);
 
+    // Générer le QR code (même en local pour visualisation)
     new QRCode(qrContainer, {
-        text: url.toString(),
+        text: finalUrl,
         width: 200,
         height: 200,
-        colorDark: '#5D5CDE',
+        colorDark: '#5D5CDE', // Bleu pour le thème SST
         colorLight: '#ffffff',
     });
+
+    // Afficher l'URL sous le QR code pour faciliter le test
+    const urlDisplay = document.createElement('div');
+    urlDisplay.className = 'mt-3 text-xs text-gray-600 dark:text-gray-400 break-all p-2 bg-gray-100 dark:bg-gray-800 rounded';
+    urlDisplay.innerHTML = `<strong>URL:</strong><br>${finalUrl}`;
+    qrContainer.appendChild(urlDisplay);
 }
 
 // Initialisation au chargement
@@ -2499,6 +2628,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 // Réinitialiser l'objet teams
                 teams = {};
+
+                // Réinitialiser les modifications admin (retour aux données par défaut)
+                resetToDefaultData()
+                    .then(() => {
+                        console.log('✅ Données du jeu réinitialisées aux valeurs par défaut');
+                    })
+                    .catch(err => {
+                        console.error('❌ Erreur réinitialisation données jeu:', err);
+                    });
 
                 // Envoyer une commande à tous les joueurs pour réinitialiser
                 sendCommand('reset_all');
@@ -3253,8 +3391,17 @@ window.addEventListener('DOMContentLoaded', () => {
                 () => {
                     const count = applyTimeMultiplier(multiplier);
                     updateTimingStats();
-                    playSound('success');
-                    showCustomAlert(`✅ ${count} jeux ont été mis à jour !`);
+
+                    // Sauvegarder dans Firebase
+                    saveBoxesDataToFirebase()
+                        .then(() => {
+                            playSound('success');
+                            showCustomAlert(`✅ ${count} jeux ont été mis à jour et sauvegardés !`);
+                        })
+                        .catch(() => {
+                            playSound('success');
+                            showCustomAlert(`✅ ${count} jeux mis à jour (sauvegarde Firebase échouée)`);
+                        });
                 }
             );
         });
@@ -3274,8 +3421,17 @@ window.addEventListener('DOMContentLoaded', () => {
             () => {
                 const count = applyTimeMultiplier(multiplier);
                 updateTimingStats();
-                playSound('success');
-                showCustomAlert(`✅ ${count} jeux ont été mis à jour !`);
+
+                // Sauvegarder dans Firebase
+                saveBoxesDataToFirebase()
+                    .then(() => {
+                        playSound('success');
+                        showCustomAlert(`✅ ${count} jeux ont été mis à jour et sauvegardés !`);
+                    })
+                    .catch(() => {
+                        playSound('success');
+                        showCustomAlert(`✅ ${count} jeux mis à jour (sauvegarde Firebase échouée)`);
+                    });
             }
         );
     });
@@ -3294,8 +3450,17 @@ window.addEventListener('DOMContentLoaded', () => {
             () => {
                 const count = applyFixedTime(time);
                 updateTimingStats();
-                playSound('success');
-                showCustomAlert(`✅ ${count} jeux ont été mis à jour à ${time}s !`);
+
+                // Sauvegarder dans Firebase
+                saveBoxesDataToFirebase()
+                    .then(() => {
+                        playSound('success');
+                        showCustomAlert(`✅ ${count} jeux ont été mis à jour à ${time}s et sauvegardés !`);
+                    })
+                    .catch(() => {
+                        playSound('success');
+                        showCustomAlert(`✅ ${count} jeux mis à jour à ${time}s (sauvegarde Firebase échouée)`);
+                    });
             }
         );
     });
