@@ -3820,7 +3820,8 @@ function renderBoxes() {
         const isCurrent = gameState.boxesUnlocked === index;
 
         const boxElement = document.createElement('div');
-        boxElement.className = `${isUnlocked ? 'unlocked-box' : 'locked-box'} cursor-pointer transition-all duration-500 bounce-in`;
+        // Ne pas rendre cliquable les coffres déjà déverrouillés
+        boxElement.className = `${isUnlocked ? 'unlocked-box' : 'locked-box'} ${isCurrent ? 'cursor-pointer' : isUnlocked ? '' : ''} transition-all duration-500 bounce-in`;
         boxElement.style.animationDelay = `${index * 0.1}s`;
 
         // Utiliser un coffre-fort pour les coffres pairs, un coffre au trésor pour les impairs
@@ -3859,16 +3860,17 @@ function renderBoxes() {
             </div>
         `;
 
-        if (isCurrent || isUnlocked) {
+        // Seulement le coffre actuel est cliquable (pas les déverrouillés)
+        if (isCurrent) {
             boxElement.addEventListener('click', () => {
                 // Vérifier si on est en pause AVANT de permettre de jouer
-                const isPausedNow = gameState.boxesUnlocked % 2 === 0 && gameState.boxesUnlocked > 0 && gameState.boxesUnlocked < boxesData.length && !gameState.pauseLifted;
+                const isPausedNow = gameState.boxesUnlocked < boxesData.length && gameState.boxesUnlocked > 0 && !gameState.pauseLifted;
 
                 if (isPausedNow && index === gameState.boxesUnlocked) {
                     // On est en pause et on essaie de cliquer sur le coffre suivant
                     console.log('🚫 Clic bloqué - En pause à l\'étape', gameState.boxesUnlocked);
                     playSound('wrong');
-                    showCustomAlert('⏸️ Le jeu est en pause ! Attendez que le formateur reprenne le jeu.');
+                    showCustomAlert('⏸️ Le jeu est en pause ! Cliquez sur "Continuer" sur l\'écran de pause.');
                     // Afficher l'écran de pause au cas où l'utilisateur serait revenu aux coffres manuellement
                     const stageNumber = gameState.boxesUnlocked;
                     showStagePauseScreen(stageNumber);
