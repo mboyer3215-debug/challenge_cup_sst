@@ -924,18 +924,22 @@ let currentTeamName = '';
 // Stockage des équipes (pour le superviseur)
 let teams = {};
 
-// SYSTÈME D'ÉTAPES (2 étapes de 2 coffres chacune)
-let currentStage = 1; // Étape actuelle (1 à 2)
+// SYSTÈME D'ÉTAPES (4 étapes, 1 pause après chaque coffre)
+let currentStage = 1; // Étape actuelle (1 à 4)
 let gamePaused = false; // Le jeu est-il en pause ?
 let stageWinners = {
     stage1: null,
-    stage2: null
+    stage2: null,
+    stage3: null,
+    stage4: null
 };
 
 // Fonction pour calculer l'étape en fonction des coffres déverrouillés
 function getStageFromBoxes(boxesUnlocked) {
-    if (boxesUnlocked >= 4) return 2;
-    if (boxesUnlocked >= 2) return 1;
+    if (boxesUnlocked >= 4) return 4;
+    if (boxesUnlocked >= 3) return 3;
+    if (boxesUnlocked >= 2) return 2;
+    if (boxesUnlocked >= 1) return 1;
     return 0; // Pas encore d'étape complétée
 }
 
@@ -2210,7 +2214,7 @@ function startListeningToStages() {
 
         // Vérifier si le jeu est en pause sur l'une des étapes
         let foundPause = false;
-        for (let i = 1; i <= 2; i++) {
+        for (let i = 1; i <= 4; i++) {
             const stage = stages[`stage${i}`];
             if (stage && stage.paused) {
                 foundPause = true;
@@ -3435,7 +3439,7 @@ function updateSupervisorDisplay() {
                     <div class="text-lg font-bold text-gray-800 dark:text-white">${team.teamName}</div>
                     <div class="text-sm text-gray-600 dark:text-gray-400">${team.totalScore} pts</div>
                     ${team.isFinished ? '<div class="text-xs text-green-600 font-semibold">✓ Terminé</div>' : ''}
-                    ${isPaused ? '<div class="text-xs text-orange-600 dark:text-orange-400 font-semibold animate-pulse">⏸️ En pause (Étape ' + (team.boxesUnlocked / 2) + ')</div>' : ''}
+                    ${isPaused ? '<div class="text-xs text-orange-600 dark:text-orange-400 font-semibold animate-pulse">⏸️ En pause (Étape ' + team.boxesUnlocked + ')</div>' : ''}
                 </div>
 
                 <div class="progress-bar-vertical">
@@ -3507,7 +3511,7 @@ function updatePauseButton(stages) {
     }
 
     // Vérifier s'il y a une étape en pause
-    for (let i = 1; i <= 2; i++) {
+    for (let i = 1; i <= 4; i++) {
         const stage = stages[`stage${i}`];
         if (stage && stage.paused === true) {
             // Le jeu est en pause sur cette étape
@@ -3627,11 +3631,11 @@ function renderBoxes() {
 
                 if (isPausedNow && index === gameState.boxesUnlocked) {
                     // On est en pause et on essaie de cliquer sur le coffre suivant
-                    console.log('🚫 Clic bloqué - En pause à l\'étape', gameState.boxesUnlocked / 2);
+                    console.log('🚫 Clic bloqué - En pause à l\'étape', gameState.boxesUnlocked);
                     playSound('wrong');
                     showCustomAlert('⏸️ Le jeu est en pause ! Attendez que le formateur reprenne le jeu.');
                     // Afficher l'écran de pause au cas où l'utilisateur serait revenu aux coffres manuellement
-                    const stageNumber = gameState.boxesUnlocked / 2;
+                    const stageNumber = gameState.boxesUnlocked;
                     showStagePauseScreen(stageNumber);
                     return;
                 }
@@ -4824,8 +4828,8 @@ function unlockBox() {
             console.log('🏁 Fin du jeu - tous les coffres déverrouillés');
             endGame();
         } else if (shouldPause) {
-            // Mise en pause automatique après 2 coffres
-            const stageNumber = gameState.boxesUnlocked / 2;
+            // Mise en pause automatique après chaque coffre
+            const stageNumber = gameState.boxesUnlocked;
             console.log(`⏸️ AFFICHAGE ÉCRAN DE PAUSE - Étape ${stageNumber}`);
             showStagePauseScreen(stageNumber);
         } else {
@@ -4970,8 +4974,8 @@ function updateStageRankings(stageNumber) {
         const allTeams = snapshot.val() || {};
         const teamsArray = [];
 
-        // Filtrer les équipes qui ont complété cette étape (stageNumber * 2 coffres)
-        const requiredBoxes = stageNumber * 2;
+        // Filtrer les équipes qui ont complété cette étape (1 coffre par étape)
+        const requiredBoxes = stageNumber;
 
         Object.keys(allTeams).forEach(teamKey => {
             const team = allTeams[teamKey];
@@ -4985,8 +4989,15 @@ function updateStageRankings(stageNumber) {
             }
         });
 
-        // Trier par score décroissant
-        teamsArray.sort((a, b) => b.score - a.score);
+        // Trier par score décroissant, puis par temps si égalité
+        teamsArray.sort((a, b) => {
+            // D'abord par score (plus grand = meilleur)
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            }
+            // Si égalité de score, par temps (plus petit = plus rapide = meilleur)
+            return a.completedStageAt - b.completedStageAt;
+        });
 
         // Afficher le classement
         if (teamsArray.length === 0) {
