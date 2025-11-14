@@ -1657,7 +1657,7 @@ const boxesData = [
                         'Faire alerter',
                         'Secourir'
                     ],
-                    correctAnswer: [0, 1, 3, 4],
+                    correctAnswers: [0, 1, 3, 4],
                     timeLimit: 70,
                     points: 130
                 }
@@ -1742,7 +1742,7 @@ const boxesData = [
                         'Écouter les bruits respiratoires',
                         'Prendre le pouls uniquement'
                     ],
-                    correctAnswer: [0, 1, 2],
+                    correctAnswers: [0, 1, 2],
                     timeLimit: 70,
                     points: 130
                 },
@@ -1870,7 +1870,7 @@ const boxesData = [
                         'Les gestes effectués',
                         'Votre âge'
                     ],
-                    correctAnswer: [0, 1, 2, 3],
+                    correctAnswers: [0, 1, 2, 3],
                     timeLimit: 75,
                     points: 130
                 }
@@ -1984,7 +1984,7 @@ const boxesData = [
                         'Remplacer le CHSCT',
                         'Participer aux actions de prévention'
                     ],
-                    correctAnswer: [0, 1, 2, 4],
+                    correctAnswers: [0, 1, 2, 4],
                     timeLimit: 80,
                     points: 140
                 }
@@ -4809,12 +4809,11 @@ function unlockBox() {
 
     broadcastUpdate();
 
-    // Vérifier si on doit mettre en pause après 2 coffres (étapes de 2 coffres)
-    const shouldPause = gameState.boxesUnlocked % 2 === 0 && gameState.boxesUnlocked < boxesData.length;
+    // Vérifier si on doit mettre en pause après CHAQUE coffre (4 pauses au total)
+    const shouldPause = gameState.boxesUnlocked < boxesData.length;
 
     console.log('🔍 Vérification pause:', {
         boxesUnlocked: gameState.boxesUnlocked,
-        modulo: gameState.boxesUnlocked % 2,
         totalBoxes: boxesData.length,
         shouldPause: shouldPause
     });
