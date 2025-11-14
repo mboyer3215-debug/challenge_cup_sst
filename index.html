@@ -1694,6 +1694,16 @@ const boxesData = [
                 ],
                 timeLimit: 90,
                 points: 130
+            },
+            {
+                type: 'true-false',
+                title: 'Prévention au quotidien',
+                question: 'Un SST doit participer activement à la prévention des risques dans son entreprise.',
+                options: ['Vrai', 'Faux'],
+                correctAnswer: 0,
+                explanation: 'VRAI - Le SST a un double rôle : porter secours en cas d\'accident ET contribuer à la prévention des risques professionnels au quotidien.',
+                timeLimit: 50,
+                points: 95
             }
         ]
     },
@@ -1783,6 +1793,30 @@ const boxesData = [
                 ],
                 timeLimit: 85,
                 points: 130
+            },
+            {
+                type: 'quiz',
+                title: 'Position d\'attente',
+                question: 'Une victime consciente qui a vomi doit être placée en quelle position ?',
+                options: [
+                    'Sur le dos',
+                    'En position latérale de sécurité (PLS)',
+                    'Assise',
+                    'Debout'
+                ],
+                correctAnswer: 1,
+                timeLimit: 60,
+                points: 105
+            },
+            {
+                type: 'true-false',
+                title: 'Examen rapide',
+                question: 'L\'examen de la victime doit toujours commencer par les pieds et remonter vers la tête.',
+                options: ['Vrai', 'Faux'],
+                correctAnswer: 1,
+                explanation: 'FAUX - L\'examen commence par la tête et descend vers les pieds, en recherchant les signes visibles de détresse vitale en priorité.',
+                timeLimit: 55,
+                points: 100
             }
         ]
     },
@@ -1873,6 +1907,30 @@ const boxesData = [
                 correctOrder: [0, 1, 2, 3],
                 timeLimit: 70,
                 points: 120
+            },
+            {
+                type: 'quiz',
+                title: 'Bouche-à-bouche',
+                question: 'Lors d\'une réanimation cardio-pulmonaire (RCP), quel est le ratio compressions/insufflations ?',
+                options: [
+                    '15 compressions pour 2 insufflations',
+                    '30 compressions pour 2 insufflations',
+                    '10 compressions pour 1 insufflation',
+                    '5 compressions pour 1 insufflation'
+                ],
+                correctAnswer: 1,
+                timeLimit: 65,
+                points: 110
+            },
+            {
+                type: 'true-false',
+                title: 'Défibrillateur',
+                question: 'Le défibrillateur automatisé externe (DAE) peut être utilisé par toute personne, même sans formation.',
+                options: ['Vrai', 'Faux'],
+                correctAnswer: 0,
+                explanation: 'VRAI - Selon la loi, toute personne peut utiliser un DAE. L\'appareil donne des instructions vocales et ne délivrera un choc que si nécessaire.',
+                timeLimit: 60,
+                points: 105
             }
         ]
     },
@@ -1963,6 +2021,30 @@ const boxesData = [
                 correctOrder: [0, 1, 2, 3],
                 timeLimit: 70,
                 points: 120
+            },
+            {
+                type: 'quiz',
+                title: 'Document unique',
+                question: 'Le Document Unique d\'Évaluation des Risques (DUER) doit être mis à jour :',
+                options: [
+                    'Tous les ans obligatoirement',
+                    'En cas de modification importante ou nouvel équipement',
+                    'Seulement en cas d\'accident grave',
+                    'Tous les 5 ans'
+                ],
+                correctAnswer: 1,
+                timeLimit: 65,
+                points: 110
+            },
+            {
+                type: 'true-false',
+                title: 'Rôle de prévention',
+                question: 'Le SST peut proposer des améliorations en matière de sécurité directement à son employeur.',
+                options: ['Vrai', 'Faux'],
+                correctAnswer: 0,
+                explanation: 'VRAI - Le SST est acteur de la prévention dans l\'entreprise. Il peut remonter les informations sur les dangers et proposer des mesures de prévention à la direction.',
+                timeLimit: 60,
+                points: 105
             }
         ]
     }
@@ -2190,11 +2272,21 @@ function generateQRCode() {
     qrContainer.innerHTML = ''; // Clear existing
 
     // Créer l'URL avec le paramètre mode=player pour l'accès joueur
-    let baseUrl = window.location.href;
+    // Utiliser origin + pathname pour éviter les paramètres existants
+    let baseUrl = window.location.origin + window.location.pathname;
 
-    // Si on est en local (file://), utiliser l'URL de votre GitHub Pages
+    // Si on est en local (file://), afficher un message
     if (baseUrl.startsWith('file://')) {
-        baseUrl = 'https://mboyer3215-debug.github.io/challenge_cup_sst/';
+        qrContainer.innerHTML = `
+            <div class="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <p class="text-sm text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Mode local détecté</p>
+                <p class="text-xs text-yellow-700 dark:text-yellow-300">
+                    Pour générer le QR code, hébergez d'abord le fichier en ligne<br>
+                    (GitHub Pages, serveur web, etc.)
+                </p>
+            </div>
+        `;
+        return;
     }
 
     const url = new URL(baseUrl);
