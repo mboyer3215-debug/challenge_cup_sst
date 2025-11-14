@@ -369,15 +369,17 @@
             </div>
 
             <!-- Barres de progression verticales -->
-            <div id="teams-progress-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div id="teams-progress-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8">
                 <!-- Les barres seront générées ici -->
             </div>
 
-            <!-- Classement final -->
-            <div id="final-ranking" class="hidden mt-8 glass-morphism rounded-3xl shadow-2xl p-8">
-                <h2 class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6">🏆 Classement Final</h2>
-                <div id="ranking-list" class="space-y-4">
-                    <!-- Le classement sera généré ici -->
+            <!-- Classement en temps réel (provisoire puis final) -->
+            <div id="supervisor-ranking" class="mt-8 glass-morphism rounded-3xl shadow-2xl p-8">
+                <h2 class="text-3xl font-bold text-center text-gray-800 dark:text-white mb-6">
+                    <span id="ranking-title">🏆 Classement Provisoire</span>
+                </h2>
+                <div id="supervisor-ranking-list" class="space-y-3">
+                    <div class="text-center text-gray-500 dark:text-gray-400">En attente des équipes...</div>
                 </div>
             </div>
         </div>
@@ -473,7 +475,7 @@
                     </div>
                 </div>
 
-                <div id="stage-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div id="stage-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
                         <div class="text-4xl mb-2">📦</div>
                         <div class="text-3xl font-bold text-primary" id="stage-boxes-unlocked">0</div>
@@ -483,14 +485,6 @@
                         <div class="text-4xl mb-2">🎯</div>
                         <div class="text-3xl font-bold text-primary" id="stage-boxes-remaining">0</div>
                         <div class="text-gray-600 dark:text-gray-400">Coffres restants</div>
-                    </div>
-                </div>
-
-                <!-- Classement provisoire -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                    <div class="text-3xl mb-4">🏆 Classement provisoire</div>
-                    <div id="stage-rankings-list" class="space-y-3">
-                        <div class="text-gray-500 dark:text-gray-400">Chargement...</div>
                     </div>
                 </div>
             </div>
@@ -3490,10 +3484,96 @@ function updateSupervisorDisplay() {
         container.appendChild(teamDiv);
     });
 
-    // Afficher le classement final si toutes les équipes ont terminé
-    if (finishedTeams > 0 && finishedTeams === teamsArray.length && teamsArray.length > 0) {
-        showFinalRanking();
+    // Mettre à jour le classement en temps réel
+    updateSupervisorRanking(teamsArray, finishedTeams === teamsArray.length && teamsArray.length > 0);
+}
+
+// Mettre à jour le classement sur la page superviseur
+function updateSupervisorRanking(teamsArray, isAllFinished) {
+    const rankingTitle = document.getElementById('ranking-title');
+    const rankingList = document.getElementById('supervisor-ranking-list');
+
+    if (!rankingList) return;
+
+    // Filtrer uniquement les équipes de cette session
+    const sessionTeams = teamsArray.filter(team => team.boxesUnlocked > 0);
+
+    if (sessionTeams.length === 0) {
+        rankingList.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400">En attente des équipes...</div>';
+        return;
     }
+
+    // Trier par score décroissant, puis par temps de fin si terminé
+    const sortedTeams = [...sessionTeams].sort((a, b) => {
+        if (b.totalScore !== a.totalScore) {
+            return b.totalScore - a.totalScore;
+        }
+        // Si même score, trier par temps de fin (plus rapide = meilleur)
+        return (a.finishTime || Infinity) - (b.finishTime || Infinity);
+    });
+
+    // Si toutes les équipes ont fini, afficher "Classement Final" et célébrer
+    if (isAllFinished) {
+        if (rankingTitle) {
+            rankingTitle.innerHTML = '🏆 Classement Final 🏆';
+        }
+
+        // Déclencher la célébration (une seule fois)
+        if (!window.finalCelebrationTriggered) {
+            window.finalCelebrationTriggered = true;
+            console.log('🎉 TOUTES LES ÉQUIPES ONT TERMINÉ - Célébration finale !');
+            createConfetti();
+            playSound('applause');
+            setTimeout(() => {
+                playSound('complete');
+            }, 300);
+        }
+    } else {
+        if (rankingTitle) {
+            rankingTitle.textContent = '🏆 Classement Provisoire';
+        }
+        // Réinitialiser le flag si ce n'est plus terminé (reset)
+        window.finalCelebrationTriggered = false;
+    }
+
+    // Afficher le classement
+    rankingList.innerHTML = '';
+    sortedTeams.forEach((team, index) => {
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+        const rankingItem = document.createElement('div');
+        rankingItem.className = `flex justify-between items-center p-4 rounded-lg ${
+            index === 0 ? 'bg-yellow-100 dark:bg-yellow-900/50 border-2 border-yellow-400' :
+            index === 1 ? 'bg-gray-100 dark:bg-gray-700 border-2 border-gray-400' :
+            index === 2 ? 'bg-orange-100 dark:bg-orange-900/50 border-2 border-orange-400' :
+            'bg-gray-50 dark:bg-gray-800'
+        } bounce-in`;
+        rankingItem.style.animationDelay = `${index * 0.05}s`;
+
+        const duration = team.finishTime && team.stats?.startTime ?
+            Math.round((team.finishTime - team.stats.startTime) / 1000) : 0;
+
+        rankingItem.innerHTML = `
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">${medal}</span>
+                <div>
+                    <div class="font-bold text-lg text-gray-800 dark:text-white">${team.teamName}</div>
+                    ${team.isFinished ? '<div class="text-xs text-green-600 dark:text-green-400 font-semibold">✓ Terminé' + (duration > 0 ? ` en ${duration}s` : '') + '</div>' : '<div class="text-xs text-blue-600 dark:text-blue-400">En cours...</div>'}
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <div class="text-2xl font-bold text-primary">${team.totalScore}</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">points</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-lg font-semibold text-gray-700 dark:text-gray-300">${team.boxesUnlocked}/4</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">coffres</div>
+                </div>
+            </div>
+        `;
+
+        rankingList.appendChild(rankingItem);
+    });
 }
 
 // Variable pour éviter plusieurs listeners
@@ -3562,23 +3642,7 @@ function updatePauseButton(stages) {
     if (stageDisplay) stageDisplay.classList.add('hidden');
 }
 
-function showFinalRanking() {
-    // NE PAS afficher la liste de classement final car les résultats
-    // sont déjà visibles sur chaque colonne (badges 🥇🥈🥉)
-    // const rankingDiv = document.getElementById('final-ranking');
-    // const rankingList = document.getElementById('ranking-list');
-    // rankingDiv.classList.remove('hidden');
-
-    // 🎊 Déclencher les confettis et applaudissements sur le superviseur
-    console.log('🎉 TOUTES LES ÉQUIPES ONT TERMINÉ - Célébration finale !');
-    createConfetti();
-    playSound('applause');
-
-    // Petit délai avant le son de victoire pour plus d'impact
-    setTimeout(() => {
-        playSound('complete');
-    }, 300);
-}
+// Ancienne fonction showFinalRanking supprimée - remplacée par updateSupervisorRanking()
 
 // ==================== JOUEUR - COFFRES ====================
 
@@ -4968,100 +5032,10 @@ function showStagePauseScreen(stageNumber) {
     document.getElementById('stage-boxes-unlocked').textContent = gameState.boxesUnlocked || 0;
     document.getElementById('stage-boxes-remaining').textContent = (boxesData.length - gameState.boxesUnlocked) || 0;
 
-    // Afficher le classement provisoire
-    updateStageRankings(stageNumber);
+    // Le classement est maintenant sur la page superviseur uniquement
 }
 
-function updateStageRankings(stageNumber) {
-    if (!trainingSessionId || !database) {
-        console.error('❌ updateStageRankings: trainingSessionId ou database manquant');
-        return;
-    }
-
-    console.log(`📊 Chargement classement étape ${stageNumber} pour session ${trainingSessionId}`);
-
-    const rankingsList = document.getElementById('stage-rankings-list');
-    if (!rankingsList) {
-        console.error('❌ Élément stage-rankings-list introuvable');
-        return;
-    }
-    rankingsList.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Chargement du classement...</div>';
-
-    database.ref('teams').once('value', (snapshot) => {
-        const allTeams = snapshot.val() || {};
-        const teamsArray = [];
-
-        console.log('📊 Total équipes Firebase:', Object.keys(allTeams).length);
-        console.log('📋 Toutes les équipes:', allTeams);
-
-        // Filtrer les équipes qui ont complété cette étape (1 coffre par étape)
-        const requiredBoxes = stageNumber;
-
-        Object.keys(allTeams).forEach(teamKey => {
-            const team = allTeams[teamKey];
-            console.log(`🔍 Équipe "${team.teamName}":`, {
-                trainingSessionId: team.trainingSessionId,
-                sessionMatch: team.trainingSessionId === trainingSessionId,
-                boxesUnlocked: team.boxesUnlocked,
-                requiredBoxes: requiredBoxes,
-                meetsRequirement: team.boxesUnlocked >= requiredBoxes
-            });
-
-            if (team.trainingSessionId === trainingSessionId && team.boxesUnlocked >= requiredBoxes) {
-                teamsArray.push({
-                    name: team.teamName,
-                    score: team.totalScore,
-                    boxesUnlocked: team.boxesUnlocked,
-                    completedStageAt: team.lastUpdate || 0
-                });
-            }
-        });
-
-        console.log(`✅ Équipes qualifiées pour étape ${stageNumber}:`, teamsArray);
-
-        // Trier par score décroissant, puis par temps si égalité
-        teamsArray.sort((a, b) => {
-            // D'abord par score (plus grand = meilleur)
-            if (b.score !== a.score) {
-                return b.score - a.score;
-            }
-            // Si égalité de score, par temps (plus petit = plus rapide = meilleur)
-            return a.completedStageAt - b.completedStageAt;
-        });
-
-        // Afficher le classement
-        if (teamsArray.length === 0) {
-            console.log('⚠️ Aucune équipe qualifiée');
-            rankingsList.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Aucune équipe n\'a encore complété cette étape.</div>';
-            return;
-        }
-
-        console.log('🏆 Classement final:', teamsArray);
-
-        rankingsList.innerHTML = '';
-        teamsArray.forEach((team, index) => {
-            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-            const rankingItem = document.createElement('div');
-            rankingItem.className = `flex justify-between items-center p-4 rounded-lg ${
-                index === 0 ? 'bg-yellow-100 dark:bg-yellow-900' :
-                index === 1 ? 'bg-gray-100 dark:bg-gray-700' :
-                index === 2 ? 'bg-orange-100 dark:bg-orange-900' :
-                'bg-gray-50 dark:bg-gray-800'
-            }`;
-            rankingItem.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">${medal}</span>
-                    <span class="font-semibold text-gray-800 dark:text-white">${team.name}</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-lg font-bold text-primary">${team.score} pts</span>
-                    <span class="text-sm text-gray-600 dark:text-gray-400">${team.boxesUnlocked}/4 coffres</span>
-                </div>
-            `;
-            rankingsList.appendChild(rankingItem);
-        });
-    });
-}
+// Ancienne fonction updateStageRankings supprimée - remplacée par updateSupervisorRanking()
 
 // ==================== FIN DE JEU ====================
 
