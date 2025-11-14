@@ -1054,25 +1054,30 @@ function playSound(type, frequency = null) {
             oscillator.stop(audioContext.currentTime + 0.1);
             break;
         case 'applause':
-            // Son d'applaudissements (bruit blanc modulé)
-            oscillator.type = 'sawtooth';
-            const applauseGain = audioContext.createGain();
-            const filter = audioContext.createBiquadFilter();
-            filter.type = 'bandpass';
-            filter.frequency.value = 1000;
-            oscillator.connect(filter);
-            filter.connect(applauseGain);
-            applauseGain.connect(audioContext.destination);
+            // Son de fanfare festive (comme une célébration)
+            // Séquence de notes joyeuses répétées
+            const celebrationNotes = [
+                { freq: 523.25, time: 0 },      // C5
+                { freq: 659.25, time: 0.12 },   // E5
+                { freq: 783.99, time: 0.24 },   // G5
+                { freq: 1046.50, time: 0.36 },  // C6
+                { freq: 783.99, time: 0.5 },    // G5
+                { freq: 1046.50, time: 0.62 }   // C6
+            ];
 
-            // Modulation pour simuler des applaudissements
-            oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-            applauseGain.gain.setValueAtTime(0, audioContext.currentTime);
-            applauseGain.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.2);
-            applauseGain.gain.linearRampToValueAtTime(0.25, audioContext.currentTime + 1);
-            applauseGain.gain.linearRampToValueAtTime(0.01, audioContext.currentTime + 2);
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 2);
-            break;
+            celebrationNotes.forEach(note => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(note.freq, audioContext.currentTime + note.time);
+                gain.gain.setValueAtTime(0.2, audioContext.currentTime + note.time);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.time + 0.15);
+                osc.start(audioContext.currentTime + note.time);
+                osc.stop(audioContext.currentTime + note.time + 0.15);
+            });
+            return; // Ne pas exécuter le code oscillator par défaut
     }
 }
 
@@ -3558,53 +3563,21 @@ function updatePauseButton(stages) {
 }
 
 function showFinalRanking() {
-    const rankingDiv = document.getElementById('final-ranking');
-    const rankingList = document.getElementById('ranking-list');
-
-    rankingDiv.classList.remove('hidden');
+    // NE PAS afficher la liste de classement final car les résultats
+    // sont déjà visibles sur chaque colonne (badges 🥇🥈🥉)
+    // const rankingDiv = document.getElementById('final-ranking');
+    // const rankingList = document.getElementById('ranking-list');
+    // rankingDiv.classList.remove('hidden');
 
     // 🎊 Déclencher les confettis et applaudissements sur le superviseur
+    console.log('🎉 TOUTES LES ÉQUIPES ONT TERMINÉ - Célébration finale !');
     createConfetti();
     playSound('applause');
-    playSound('complete');
 
-    // Trier les équipes par score décroissant, puis par temps
-    const sortedTeams = Object.values(teams).sort((a, b) => {
-        if (b.totalScore !== a.totalScore) {
-            return b.totalScore - a.totalScore;
-        }
-        return (a.finishTime || Infinity) - (b.finishTime || Infinity);
-    });
-
-    rankingList.innerHTML = '';
-
-    sortedTeams.forEach((team, index) => {
-        const rank = index + 1;
-        const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
-        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-
-        const duration = team.finishTime && team.stats.startTime ?
-            Math.round((team.finishTime - team.stats.startTime) / 1000) : 0;
-
-        const rankItem = document.createElement('div');
-        rankItem.className = 'glass-morphism rounded-2xl p-6 flex items-center gap-6 bounce-in';
-        rankItem.style.animationDelay = `${index * 0.1}s`;
-
-        rankItem.innerHTML = `
-            <div class="ranking-badge ${rankClass}">
-                ${medal}
-            </div>
-            <div class="flex-1">
-                <div class="text-2xl font-bold text-gray-800 dark:text-white">${team.teamName}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">
-                    ${team.totalScore} points • ${duration}s • ${team.stats.gamesWon}/${team.stats.gamesWon + team.stats.gamesLost} réussis
-                </div>
-            </div>
-            <div class="text-3xl">${rank === 1 ? '🎉' : rank === 2 ? '👏' : rank === 3 ? '👍' : '✨'}</div>
-        `;
-
-        rankingList.appendChild(rankItem);
-    });
+    // Petit délai avant le son de victoire pour plus d'impact
+    setTimeout(() => {
+        playSound('complete');
+    }, 300);
 }
 
 // ==================== JOUEUR - COFFRES ====================
@@ -5000,20 +4973,40 @@ function showStagePauseScreen(stageNumber) {
 }
 
 function updateStageRankings(stageNumber) {
-    if (!sessionId || !database) return;
+    if (!trainingSessionId || !database) {
+        console.error('❌ updateStageRankings: trainingSessionId ou database manquant');
+        return;
+    }
+
+    console.log(`📊 Chargement classement étape ${stageNumber} pour session ${trainingSessionId}`);
 
     const rankingsList = document.getElementById('stage-rankings-list');
+    if (!rankingsList) {
+        console.error('❌ Élément stage-rankings-list introuvable');
+        return;
+    }
     rankingsList.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Chargement du classement...</div>';
 
     database.ref('teams').once('value', (snapshot) => {
         const allTeams = snapshot.val() || {};
         const teamsArray = [];
 
+        console.log('📊 Total équipes Firebase:', Object.keys(allTeams).length);
+        console.log('📋 Toutes les équipes:', allTeams);
+
         // Filtrer les équipes qui ont complété cette étape (1 coffre par étape)
         const requiredBoxes = stageNumber;
 
         Object.keys(allTeams).forEach(teamKey => {
             const team = allTeams[teamKey];
+            console.log(`🔍 Équipe "${team.teamName}":`, {
+                trainingSessionId: team.trainingSessionId,
+                sessionMatch: team.trainingSessionId === trainingSessionId,
+                boxesUnlocked: team.boxesUnlocked,
+                requiredBoxes: requiredBoxes,
+                meetsRequirement: team.boxesUnlocked >= requiredBoxes
+            });
+
             if (team.trainingSessionId === trainingSessionId && team.boxesUnlocked >= requiredBoxes) {
                 teamsArray.push({
                     name: team.teamName,
@@ -5023,6 +5016,8 @@ function updateStageRankings(stageNumber) {
                 });
             }
         });
+
+        console.log(`✅ Équipes qualifiées pour étape ${stageNumber}:`, teamsArray);
 
         // Trier par score décroissant, puis par temps si égalité
         teamsArray.sort((a, b) => {
@@ -5036,9 +5031,12 @@ function updateStageRankings(stageNumber) {
 
         // Afficher le classement
         if (teamsArray.length === 0) {
+            console.log('⚠️ Aucune équipe qualifiée');
             rankingsList.innerHTML = '<div class="text-gray-500 dark:text-gray-400">Aucune équipe n\'a encore complété cette étape.</div>';
             return;
         }
+
+        console.log('🏆 Classement final:', teamsArray);
 
         rankingsList.innerHTML = '';
         teamsArray.forEach((team, index) => {
