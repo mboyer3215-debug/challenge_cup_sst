@@ -395,7 +395,7 @@
                         <div class="text-sm text-gray-600 dark:text-gray-400">Points Totaux</div>
                     </div>
                     <div class="text-center">
-                        <div class="text-4xl font-bold text-green-600" id="boxes-unlocked">0/8</div>
+                        <div class="text-4xl font-bold text-green-600" id="boxes-unlocked">0/4</div>
                         <div class="text-sm text-gray-600 dark:text-gray-400">Coffres Ouverts</div>
                     </div>
                     <button id="toggle-music-btn" class="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg font-semibold transition-all shadow-lg">
@@ -765,8 +765,8 @@ async function hashPassword(password) {
     return hashHex;
 }
 
-// Hash du mot de passe correct (MibQuizSST)
-const CORRECT_PASSWORD_HASH = 'd765abcf8ac3fd0f0a6628252442e86958246badd5e320ffe2f731e540c7cc3b';
+// Hash du mot de passe correct (MiBSST)
+const CORRECT_PASSWORD_HASH = '3652f85f2502009853b590c39bb402d418f2de0c8f77c31156d61b79b2529a5b';
 
 // Variable globale pour l'authentification (en mémoire uniquement)
 let isUserAuthenticated = false;
@@ -924,20 +924,16 @@ let currentTeamName = '';
 // Stockage des équipes (pour le superviseur)
 let teams = {};
 
-// SYSTÈME D'ÉTAPES (4 étapes de 2 coffres chacune)
-let currentStage = 1; // Étape actuelle (1 à 4)
+// SYSTÈME D'ÉTAPES (2 étapes de 2 coffres chacune)
+let currentStage = 1; // Étape actuelle (1 à 2)
 let gamePaused = false; // Le jeu est-il en pause ?
 let stageWinners = {
     stage1: null,
-    stage2: null,
-    stage3: null,
-    stage4: null
+    stage2: null
 };
 
 // Fonction pour calculer l'étape en fonction des coffres déverrouillés
 function getStageFromBoxes(boxesUnlocked) {
-    if (boxesUnlocked >= 8) return 4;
-    if (boxesUnlocked >= 6) return 3;
     if (boxesUnlocked >= 4) return 2;
     if (boxesUnlocked >= 2) return 1;
     return 0; // Pas encore d'étape complétée
@@ -1599,21 +1595,20 @@ function createChestOpenEffect(element) {
 const boxesData = [
     {
         title: 'DC1 - Protéger',
-        subtitle: 'Situer son rôle de SST',
+        subtitle: 'Situer son rôle et protéger',
         icon: '🛡️',
         color: 'from-blue-500 to-blue-700',
         games: [
-            // Jeu 1 avec 8 variations
             [
                 {
                     type: 'quiz',
-                    title: 'DC1.1 - Cadre juridique du SST',
-                    question: 'Quel est le cadre juridique qui définit le rôle du Sauveteur Secouriste du Travail en France ?',
+                    title: 'Cadre juridique',
+                    question: 'Quel est le cadre juridique qui définit le rôle du SST ?',
                     options: [
-                        'Le Code du Travail (Article R4224-15)',
-                        'Le Code Civil',
-                        'Le Code de la Santé Publique',
-                        'Le Règlement Intérieur de l\'entreprise'
+                        'Code du Travail (Article R4224-15)',
+                        'Code Civil',
+                        'Code de la Santé Publique',
+                        'Règlement Intérieur'
                     ],
                     correctAnswer: 0,
                     timeLimit: 60,
@@ -1621,8 +1616,8 @@ const boxesData = [
                 },
                 {
                     type: 'quiz',
-                    title: 'DC1.1 - Rôle du SST',
-                    question: 'Quel est le rôle principal d\'un SST sur son lieu de travail ?',
+                    title: 'Rôle du SST',
+                    question: 'Quel est le rôle principal d\'un SST ?',
                     options: [
                         'Remplacer les services d\'urgence',
                         'Porter les premiers secours et prévenir les risques',
@@ -1634,24 +1629,8 @@ const boxesData = [
                     points: 100
                 },
                 {
-                    type: 'quiz-multi',
-                    title: 'DC1.1 - Missions du SST',
-                    question: 'Quelles sont les missions d\'un SST ? (Plusieurs réponses)',
-                    options: [
-                        'Protéger',
-                        'Examiner',
-                        'Prescrire des médicaments',
-                        'Faire alerter',
-                        'Secourir',
-                        'Transporter la victime'
-                    ],
-                    correctAnswers: [0, 1, 3, 4],
-                    timeLimit: 70,
-                    points: 120
-                },
-                {
                     type: 'quiz',
-                    title: 'DC1.1 - Formation SST',
+                    title: 'Formation SST',
                     question: 'Quelle est la durée de validité d\'un certificat SST ?',
                     options: [
                         '1 an',
@@ -1664,391 +1643,58 @@ const boxesData = [
                     points: 100
                 },
                 {
-                    type: 'quiz',
-                    title: 'DC1.1 - Nombre de SST',
-                    question: 'Combien de SST minimum doit-on avoir dans une entreprise de moins de 20 salariés ?',
-                    options: [
-                        'Aucun',
-                        '1 SST',
-                        '2 SST',
-                        '5% de l\'effectif'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 55,
-                    points: 100
-                },
-                {
                     type: 'quiz-multi',
-                    title: 'DC1.1 - Obligations du SST',
-                    question: 'Quelles sont les obligations du SST ? (Plusieurs réponses)',
+                    title: 'Missions du SST',
+                    question: 'Quelles sont les missions d\'un SST ? (Plusieurs réponses)',
                     options: [
-                        'Intervenir immédiatement en cas d\'accident',
-                        'Se recycler tous les 2 ans',
-                        'Remplacer le médecin du travail',
-                        'Connaître les risques de l\'entreprise',
-                        'Prodiguer les premiers secours'
-                    ],
-                    correctAnswers: [0, 1, 3, 4],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'DC1.1 - Responsabilité',
-                    question: 'Un SST peut-il être poursuivi pour non-assistance à personne en danger ?',
-                    options: [
-                        'Non, jamais',
-                        'Oui, comme tout citoyen',
-                        'Seulement durant ses heures de travail',
-                        'Seulement s\'il est diplômé'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 60,
-                    points: 110
-                },
-                {
-                    type: 'quiz',
-                    title: 'DC1.1 - Prévention',
-                    question: 'En plus des secours, quel est l\'autre rôle majeur du SST ?',
-                    options: [
-                        'Nettoyer les lieux de l\'accident',
-                        'Participer à la prévention des risques',
-                        'Former les autres salariés',
-                        'Gérer la trousse de secours'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 55,
-                    points: 100
-                },
-                {
-                    type: 'true-false',
-                    title: 'DC1.1 - Vrai ou Faux',
-                    question: 'Un SST peut administrer des médicaments à une victime.',
-                    options: ['Vrai', 'Faux'],
-                    correctAnswer: 1,
-                    explanation: 'FAUX - Un SST ne peut jamais administrer de médicaments. C\'est un acte médical réservé aux professionnels de santé.',
-                    timeLimit: 45,
-                    points: 90
-                },
-                {
-                    type: 'true-false',
-                    title: 'DC1.1 - Vrai ou Faux',
-                    question: 'Le certificat SST doit être recyclé tous les 2 ans.',
-                    options: ['Vrai', 'Faux'],
-                    correctAnswer: 0,
-                    explanation: 'VRAI - Le recyclage SST doit avoir lieu tous les 24 mois pour maintenir la validité du certificat.',
-                    timeLimit: 45,
-                    points: 90
-                }
-            ],
-            // Nouveaux jeux Vrai/Faux
-            {
-                type: 'true-false',
-                title: 'DC1.1 - Vrai ou Faux',
-                question: 'Le SST doit toujours rester sur les lieux jusqu\'à l\'arrivée des secours spécialisés.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - Le SST doit rester avec la victime et maintenir les gestes de secours jusqu\'à la prise en charge par les secours spécialisés.',
-                timeLimit: 45,
-                points: 90
-            },
-            {
-                type: 'true-false',
-                title: 'DC1.1 - Vrai ou Faux',
-                question: 'Le SST peut utiliser n\'importe quel matériel médical disponible dans l\'entreprise.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 1,
-                explanation: 'FAUX - Le SST ne peut utiliser que le matériel pour lequel il est formé (DAE, trousse de secours basique). Il ne peut pas utiliser de matériel médical spécialisé.',
-                timeLimit: 50,
-                points: 95
-            },
-            // Jeu 2 avec 6 variations
-            [
-                {
-                    type: 'matching',
-                    title: 'DC1.2 - Délimiter son champ d\'intervention',
-                    question: 'Associez chaque action avec le bon intervenant :',
-                    pairs: [
-                        { left: 'Porter les premiers secours', right: 'SST' },
-                        { left: 'Prescrire un traitement médical', right: 'Médecin' },
-                        { left: 'Protéger et alerter', right: 'SST' },
-                        { left: 'Transporter la victime à l\'hôpital', right: 'Secours spécialisés' }
-                    ],
-                    timeLimit: 90,
-                    points: 120
-                },
-                {
-                    type: 'quiz',
-                    title: 'DC1.2 - Limite d\'intervention du SST',
-                    question: 'Quelle est la limite d\'intervention du SST ?',
-                    options: [
-                        'Jusqu\'à l\'arrivée des secours spécialisés',
-                        'Jusqu\'à la guérison complète',
-                        'Pendant 24 heures',
-                        'Il n\'y a pas de limite'
-                    ],
-                    correctAnswer: 0,
-                    timeLimit: 70,
-                    points: 110
-                },
-                {
-                    type: 'matching',
-                    title: 'DC1.2 - Rôles et responsabilités',
-                    question: 'Associez chaque intervenant à sa responsabilité :',
-                    pairs: [
-                        { left: 'Réanimation cardio-pulmonaire', right: 'SST' },
-                        { left: 'Diagnostic médical', right: 'Médecin' },
-                        { left: 'Transport médicalisé', right: 'SMUR' },
-                        { left: 'Mise en sécurité', right: 'SST' }
-                    ],
-                    timeLimit: 85,
-                    points: 120
-                },
-                {
-                    type: 'quiz',
-                    title: 'DC1.2 - Matériel SST',
-                    question: 'Le SST peut-il utiliser un défibrillateur automatisé externe (DAE) ?',
-                    options: [
-                        'Non, il faut une formation spécifique',
-                        'Oui, tout citoyen peut l\'utiliser',
-                        'Seulement les pompiers',
-                        'Uniquement sur prescription médicale'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 60,
-                    points: 100
-                },
-                {
-                    type: 'sequence',
-                    title: 'DC1.2 - Chaîne de secours',
-                    question: 'Remettez dans l\'ordre les étapes de la chaîne de secours :',
-                    items: [
                         'Protéger',
                         'Examiner',
-                        'Faire alerter / Alerter',
+                        'Prescrire des médicaments',
+                        'Faire alerter',
                         'Secourir'
                     ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 65,
-                    points: 120
-                },
-                {
-                    type: 'puzzle-text',
-                    title: 'DC1.2 - Conduites à tenir',
-                    question: 'Reconstituez les 4 grandes actions du SST dans le bon ordre :',
-                    pieces: [
-                        '1. Protéger',
-                        '2. Examiner',
-                        '3. Faire alerter ou alerter',
-                        '4. Secourir'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
+                    correctAnswer: [0, 1, 3, 4],
                     timeLimit: 70,
-                    points: 120
-                }
-            ]
-        ]
-    },
-    {
-        title: 'DC1 - Protéger',
-        subtitle: 'Protéger de façon adaptée',
-        icon: '⚠️',
-        color: 'from-red-500 to-red-700',
-        games: [
-            // Jeu 1 avec 6 variations
-            [
-                {
-                    type: 'sequence',
-                    title: 'Partie 2 - Reconnaître les dangers',
-                    question: 'Remettez dans l\'ordre les étapes pour reconnaître les dangers persistants :',
-                    items: [
-                        'Observer la situation',
-                        'Identifier les dangers',
-                        'Repérer les personnes exposées',
-                        'Imaginer les accidents possibles'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
                     points: 130
-                },
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 2 - Dangers persistants',
-                    question: 'Quels sont les dangers persistants qui nécessitent une protection ? (Plusieurs réponses)',
-                    options: [
-                        'Risque électrique',
-                        'Risque d\'incendie ou d\'explosion',
-                        'Risque d\'écrasement',
-                        'Victime qui tousse',
-                        'Atmosphère toxique',
-                        'Risque routier'
-                    ],
-                    correctAnswers: [0, 1, 2, 4, 5],
-                    timeLimit: 80,
-                    points: 140
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 2 - Protection électrique',
-                    question: 'Face à un danger électrique, que devez-vous faire EN PREMIER ?',
-                    options: [
-                        'Tirer la victime par les vêtements',
-                        'Couper le courant',
-                        'Appeler les pompiers',
-                        'Faire un massage cardiaque'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 55,
-                    points: 100
-                },
-                {
-                    type: 'matching',
-                    title: 'Partie 2 - Types de dangers',
-                    question: 'Associez chaque danger à sa catégorie :',
-                    pairs: [
-                        { left: 'Câble électrique dénudé', right: 'Risque électrique' },
-                        { left: 'Fuite de gaz', right: 'Risque d\'explosion' },
-                        { left: 'Véhicule en marche', right: 'Risque d\'écrasement' },
-                        { left: 'Fumée dense', right: 'Atmosphère toxique' }
-                    ],
-                    timeLimit: 90,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 2 - Périmètre de sécurité',
-                    question: 'Pourquoi faut-il délimiter un périmètre de sécurité ?',
-                    options: [
-                        'Pour empêcher les curieux',
-                        'Pour éviter le sur-accident',
-                        'Pour impressionner les secours',
-                        'Pour isoler la victime'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 60,
-                    points: 100
-                },
-                {
-                    type: 'quiz-illustrated',
-                    illustrationFunction: 'getTriangleSVG',
-                    title: 'Partie 2 - Schéma de protection',
-                    question: 'À quelle distance minimum doit-on placer le triangle de présignalisation en cas d\'accident ?',
-                    options: [
-                        '10 mètres',
-                        '20 mètres',
-                        '30 mètres',
-                        '50 mètres'
-                    ],
-                    correctAnswer: 2,
-                    timeLimit: 70,
-                    points: 110
                 }
             ],
-            // Nouveaux jeux Vrai/Faux - Protéger
             {
                 type: 'true-false',
-                title: 'Partie 2 - Vrai ou Faux',
-                question: 'On peut déplacer une victime dans tous les cas pour la mettre en sécurité.',
+                title: 'Médicaments',
+                question: 'Un SST peut administrer des médicaments à une victime.',
                 options: ['Vrai', 'Faux'],
                 correctAnswer: 1,
-                explanation: 'FAUX - On ne déplace une victime que si un danger vital, immédiat et impossible à supprimer menace. Le déplacement peut aggraver les lésions.',
-                timeLimit: 50,
-                points: 95
-            },
-            {
-                type: 'true-false',
-                title: 'Partie 2 - Vrai ou Faux',
-                question: 'Le triangle de signalisation doit être placé à au moins 30 mètres en amont de l\'accident.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - Le triangle de présignalisation doit être placé à minimum 30 mètres (distance de visibilité) pour permettre aux autres véhicules de ralentir à temps.',
+                explanation: 'FAUX - Un SST ne peut jamais administrer de médicaments. C\'est un acte médical réservé aux professionnels de santé.',
                 timeLimit: 45,
                 points: 90
             },
             {
-                type: 'true-false',
-                title: 'Partie 2 - Vrai ou Faux',
-                question: 'La protection du sauveteur passe avant celle de la victime.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - Le sauveteur doit d\'abord assurer sa propre sécurité. Un sauveteur blessé ne peut plus porter secours et devient une victime supplémentaire.',
-                timeLimit: 50,
-                points: 95
+                type: 'sequence',
+                title: 'Chaîne de secours',
+                question: 'Remettez dans l\'ordre les étapes de la chaîne de secours :',
+                items: [
+                    'Protéger',
+                    'Examiner',
+                    'Faire alerter / Alerter',
+                    'Secourir'
+                ],
+                correctOrder: [0, 1, 2, 3],
+                timeLimit: 65,
+                points: 120
             },
-            // Jeu 2 avec 5 variations
-            [
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 2 - Actions de protection',
-                    question: 'Quelles actions permettent de protéger ? (Plusieurs réponses)',
-                    options: [
-                        'Couper le courant',
-                        'Baliser la zone',
-                        'Déplacer la victime immédiatement',
-                        'Fermer l\'arrivée de gaz',
-                        'Faire évacuer la zone',
-                        'Donner à boire à la victime'
-                    ],
-                    correctAnswers: [0, 1, 3, 4],
-                    timeLimit: 85,
-                    points: 140
-                },
-                {
-                    type: 'sequence',
-                    title: 'Partie 2 - Protéger sur la route',
-                    question: 'Ordre des actions pour protéger sur un accident de la route :',
-                    items: [
-                        'Allumer les feux de détresse',
-                        'Mettre le gilet haute visibilité',
-                        'Placer le triangle 30m en amont',
-                        'Faire évacuer les victimes valides'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 2 - Dégagement d\'urgence',
-                    question: 'Quand peut-on déplacer une victime ?',
-                    options: [
-                        'Toujours, pour la mettre à l\'aise',
-                        'Jamais, il faut attendre les secours',
-                        'Uniquement si un danger vital immédiat et impossible à supprimer menace',
-                        'Dès qu\'elle saigne'
-                    ],
-                    correctAnswer: 2,
-                    timeLimit: 70,
-                    points: 120
-                },
-                {
-                    type: 'matching',
-                    title: 'Partie 2 - Moyens de protection',
-                    question: 'Associez chaque danger à son moyen de protection :',
-                    pairs: [
-                        { left: 'Incendie', right: 'Extincteur / Évacuation' },
-                        { left: 'Électricité', right: 'Coupure du courant' },
-                        { left: 'Gaz', right: 'Fermeture vanne + aération' },
-                        { left: 'Accident route', right: 'Triangle + balisage' }
-                    ],
-                    timeLimit: 90,
-                    points: 130
-                },
-                {
-                    type: 'puzzle-text',
-                    title: 'Partie 2 - Ordre de priorité',
-                    question: 'Reconstituez l\'ordre de priorité dans la protection :',
-                    pieces: [
-                        '1. Se protéger soi-même',
-                        '2. Protéger les autres',
-                        '3. Protéger la victime',
-                        '4. Supprimer ou isoler le danger'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                }
-            ]
+            {
+                type: 'matching',
+                title: 'Champ d\'intervention',
+                question: 'Associez chaque action avec le bon intervenant :',
+                pairs: [
+                    { left: 'Porter les premiers secours', right: 'SST' },
+                    { left: 'Prescrire un traitement', right: 'Médecin' },
+                    { left: 'Protéger et alerter', right: 'SST' },
+                    { left: 'Transport médicalisé', right: 'Secours spécialisés' }
+                ],
+                timeLimit: 90,
+                points: 130
+            }
         ]
     },
     {
@@ -2057,43 +1703,15 @@ const boxesData = [
         icon: '🔍',
         color: 'from-green-500 to-green-700',
         games: [
-            // Jeu 1 avec 6 variations
             [
                 {
-                    type: 'sequence',
-                    title: 'Partie 2.1 - Ordre d\'examen',
-                    question: 'Dans quel ordre examinez-vous une victime ?',
-                    items: [
-                        'Vérifier la conscience',
-                        'Vérifier la respiration',
-                        'Rechercher une hémorragie',
-                        'Rechercher d\'autres signes'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 70,
-                    points: 120
-                },
-                {
-                    type: 'matching',
-                    title: 'Partie 2.1 - Signes et symptômes',
-                    question: 'Associez chaque signe avec sa catégorie :',
-                    pairs: [
-                        { left: 'Victime ne répond pas', right: 'Inconscience' },
-                        { left: 'Ventre ou thorax qui se soulève', right: 'Respiration présente' },
-                        { left: 'Saignement abondant', right: 'Hémorragie externe' },
-                        { left: 'Brûlure, plaie, douleur', right: 'Autres signes' }
-                    ],
-                    timeLimit: 85,
-                    points: 130
-                },
-                {
                     type: 'quiz',
-                    title: 'Partie 2.1 - Conscience',
+                    title: 'Conscience',
                     question: 'Comment vérifier la conscience d\'une victime ?',
                     options: [
-                        'Lui poser une question simple et secouer doucement les épaules',
+                        'Lui poser une question et secouer les épaules',
                         'La gifler',
-                        'Lui verser de l\'eau froide',
+                        'Lui verser de l\'eau',
                         'Attendre qu\'elle se réveille'
                     ],
                     correctAnswer: 0,
@@ -2102,23 +1720,21 @@ const boxesData = [
                 },
                 {
                     type: 'quiz-multi',
-                    title: 'Partie 2.1 - Respiration',
+                    title: 'Vérifier la respiration',
                     question: 'Comment vérifier si une victime respire ? (Plusieurs méthodes)',
                     options: [
                         'Voir si le ventre/thorax se soulève',
                         'Sentir le souffle sur la joue',
                         'Écouter les bruits respiratoires',
-                        'Prendre le pouls',
-                        'Regarder la couleur des lèvres',
-                        'Mettre un miroir sous le nez'
+                        'Prendre le pouls uniquement'
                     ],
-                    correctAnswers: [0, 1, 2],
-                    timeLimit: 75,
+                    correctAnswer: [0, 1, 2],
+                    timeLimit: 70,
                     points: 130
                 },
                 {
                     type: 'quiz',
-                    title: 'Partie 2.1 - Hémorragie',
+                    title: 'Hémorragie',
                     question: 'Qu\'est-ce qu\'une hémorragie externe ?',
                     options: [
                         'Un saignement visible qui ne s\'arrête pas',
@@ -2129,1040 +1745,167 @@ const boxesData = [
                     correctAnswer: 0,
                     timeLimit: 55,
                     points: 100
-                },
-                {
-                    type: 'quiz-illustrated',
-                    illustrationFunction: 'getLVASVG',
-                    title: 'Partie 2.1 - Position LVA',
-                    question: 'Comment libère-t-on les voies aériennes avant de vérifier la respiration ?',
-                    options: [
-                        'Une main sur le front, l\'autre sous le menton, et basculer la tête en arrière',
-                        'Tourner la tête sur le côté',
-                        'Soulever les épaules',
-                        'Mettre un oreiller sous la tête'
-                    ],
-                    correctAnswer: 0,
-                    timeLimit: 70,
-                    points: 110
                 }
             ],
-            // Nouveaux jeux Vrai/Faux - Examiner
             {
                 type: 'true-false',
-                title: 'Partie 2.1 - Vrai ou Faux',
-                question: 'Pour vérifier la respiration, il suffit de prendre le pouls de la victime.',
+                title: 'Respiration et pouls',
+                question: 'Pour vérifier la respiration, il suffit de prendre le pouls.',
                 options: ['Vrai', 'Faux'],
                 correctAnswer: 1,
-                explanation: 'FAUX - La prise de pouls n\'est pas fiable pour vérifier la respiration. Il faut utiliser la méthode VES (Voir, Écouter, Sentir) pendant 10 secondes.',
+                explanation: 'FAUX - La prise de pouls n\'est pas fiable. Il faut utiliser la méthode VES (Voir, Écouter, Sentir) pendant 10 secondes.',
                 timeLimit: 50,
                 points: 95
             },
             {
-                type: 'true-false',
-                title: 'Partie 2.1 - Vrai ou Faux',
-                question: 'Une victime inconsciente qui respire doit être mise en Position Latérale de Sécurité (PLS).',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - La PLS permet d\'éviter l\'obstruction des voies aériennes par la langue ou les liquides (vomissements, sang) chez une victime inconsciente qui respire.',
-                timeLimit: 50,
-                points: 95
+                type: 'sequence',
+                title: 'Ordre d\'examen',
+                question: 'Dans quel ordre examinez-vous une victime ?',
+                items: [
+                    'Vérifier la conscience',
+                    'Vérifier la respiration',
+                    'Rechercher une hémorragie',
+                    'Rechercher d\'autres signes'
+                ],
+                correctOrder: [0, 1, 2, 3],
+                timeLimit: 70,
+                points: 120
             },
             {
-                type: 'true-false',
-                title: 'Partie 2.1 - Vrai ou Faux',
-                question: 'L\'examen de la victime doit toujours commencer par la recherche d\'une hémorragie.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 1,
-                explanation: 'FAUX - L\'examen commence toujours par la vérification de la conscience, puis de la respiration, et ensuite la recherche d\'une hémorragie externe.',
-                timeLimit: 50,
-                points: 95
-            },
-            // Jeu 2 avec 5 variations
-            [
-                {
-                    type: 'sequence',
-                    title: 'Partie 2.1 - Bilan vital',
-                    question: 'Ordre des vérifications pour le bilan vital :',
-                    items: [
-                        'Parler à la victime',
-                        'Libérer les voies aériennes',
-                        'Vérifier la respiration 10 secondes',
-                        'Rechercher une hémorragie visible'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 70,
-                    points: 120
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 2.1 - Signes de détresse',
-                    question: 'Quel signe indique une détresse vitale immédiate ?',
-                    options: [
-                        'Une petite plaie au doigt',
-                        'L\'absence de respiration',
-                        'Une douleur au genou',
-                        'Une légère brûlure'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 55,
-                    points: 100
-                },
-                {
-                    type: 'matching',
-                    title: 'Partie 2.1 - État de conscience',
-                    question: 'Associez chaque réponse à l\'état de conscience :',
-                    pairs: [
-                        { left: 'Répond à la question', right: 'Consciente' },
-                        { left: 'Ouvre les yeux au bruit', right: 'Semi-consciente' },
-                        { left: 'Aucune réaction', right: 'Inconsciente' },
-                        { left: 'Parle de manière confuse', right: 'Consciente altérée' }
-                    ],
-                    timeLimit: 85,
-                    points: 130
-                },
-                {
-                    type: 'puzzle-text',
-                    title: 'Partie 2.1 - Méthode Ver Écouter Sentir',
-                    question: 'Reconstituez la méthode VES (Voir Écouter Sentir) :',
-                    pieces: [
-                        '1. Basculer doucement la tête en arrière',
-                        '2. VOIR le ventre/thorax se soulever',
-                        '3. ÉCOUTER les bruits respiratoires',
-                        '4. SENTIR le souffle sur la joue'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 2.1 - Autres signes',
-                    question: 'Quels autres signes devez-vous rechercher ? (Plusieurs réponses)',
-                    options: [
-                        'Plaies',
-                        'Brûlures',
-                        'Déformations',
-                        'Couleur des cheveux',
-                        'Douleurs',
-                        'Taille de la victime'
-                    ],
-                    correctAnswers: [0, 1, 2, 4],
-                    timeLimit: 70,
-                    points: 130
-                }
-            ]
+                type: 'matching',
+                title: 'Signes et symptômes',
+                question: 'Associez chaque signe avec sa catégorie :',
+                pairs: [
+                    { left: 'Ne répond pas', right: 'Inconscience' },
+                    { left: 'Ventre qui se soulève', right: 'Respiration' },
+                    { left: 'Saignement abondant', right: 'Hémorragie' },
+                    { left: 'Brûlure, plaie', right: 'Autres signes' }
+                ],
+                timeLimit: 85,
+                points: 130
+            }
         ]
     },
     {
-        title: 'DC2 - Alerter',
-        subtitle: 'Faire alerter ou alerter',
-        icon: '📞',
-        color: 'from-yellow-500 to-orange-600',
+        title: 'DC3 - Alerter & Secourir',
+        subtitle: 'Faire alerter et secourir',
+        icon: '🩹',
+        color: 'from-red-500 to-orange-600',
         games: [
-            // Jeu 1 avec 7 variations
             [
                 {
-                    type: 'puzzle-text',
-                    title: 'Partie 6 - Message d\'alerte',
-                    question: 'Reconstituez le message d\'alerte dans le bon ordre :',
-                    pieces: [
-                        '1. Numéro de téléphone',
-                        '2. Lieu précis de l\'accident',
-                        '3. Nature de l\'accident',
-                        '4. Nombre de victimes',
-                        '5. État de chaque victime',
-                        '6. Gestes effectués'
-                    ],
-                    correctOrder: [0, 1, 2, 3, 4, 5],
-                    timeLimit: 80,
-                    points: 130
-                },
-                {
                     type: 'quiz',
-                    title: 'Partie 6 - Numéros d\'urgence',
-                    question: 'Quel numéro d\'urgence devez-vous appeler pour un accident du travail avec victime grave ?',
+                    title: 'Numéros d\'urgence',
+                    question: 'Quel numéro appeler pour un accident du travail avec victime grave ?',
                     options: [
-                        '15 - SAMU (urgence médicale)',
+                        '15 - SAMU',
                         '17 - Police',
-                        '112 - Numéro européen',
-                        'Le numéro interne de l\'entreprise uniquement'
+                        '18 - Pompiers',
+                        '112 - Numéro européen'
                     ],
                     correctAnswer: 0,
                     timeLimit: 50,
                     points: 100
                 },
                 {
-                    type: 'matching',
-                    title: 'Partie 6 - Numéros d\'urgence',
-                    question: 'Associez chaque numéro à son service :',
-                    pairs: [
-                        { left: '15', right: 'SAMU' },
-                        { left: '18', right: 'Pompiers' },
-                        { left: '112', right: 'Numéro européen' },
-                        { left: '114', right: 'Sourds et malentendants' }
-                    ],
-                    timeLimit: 75,
-                    points: 120
-                },
-                {
                     type: 'quiz',
-                    title: 'Partie 6 - Qui alerte ?',
+                    title: 'Arrêt cardiaque',
                     question: 'Si vous êtes seul avec une victime en arrêt cardiaque, que faites-vous ?',
                     options: [
-                        'Vous restez avec la victime sans alerter',
-                        'Vous alertez les secours AVANT de commencer la réanimation',
-                        'Vous attendez de l\'aide',
-                        'Vous partez chercher un défibrillateur'
+                        'Rester sans alerter',
+                        'Alerter AVANT de réanimer',
+                        'Attendre de l\'aide',
+                        'Chercher un défibrillateur'
                     ],
                     correctAnswer: 1,
                     timeLimit: 65,
                     points: 110
                 },
                 {
-                    type: 'sequence',
-                    title: 'Partie 6 - Contenu de l\'alerte',
-                    question: 'Ordre des informations à donner aux secours :',
-                    items: [
-                        'Lieu exact et accès',
-                        'Nature de l\'accident',
-                        'Nombre et état des victimes',
-                        'Gestes déjà effectués'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 70,
-                    points: 120
-                },
-                {
                     type: 'quiz-multi',
-                    title: 'Partie 6 - Informations importantes',
+                    title: 'Informations à donner',
                     question: 'Que devez-vous préciser lors de l\'alerte ? (Plusieurs réponses)',
                     options: [
                         'L\'adresse exacte',
                         'Votre nom',
                         'L\'état de la victime',
-                        'La météo',
                         'Les gestes effectués',
                         'Votre âge'
                     ],
-                    correctAnswers: [0, 1, 2, 4],
+                    correctAnswer: [0, 1, 2, 3],
                     timeLimit: 75,
                     points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 6 - Fin de l\'appel',
-                    question: 'Qui raccroche en premier lors d\'un appel aux secours ?',
-                    options: [
-                        'Vous, dès que vous avez tout dit',
-                        'Le régulateur des secours',
-                        'Peu importe',
-                        'Personne, on laisse la ligne ouverte'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 55,
-                    points: 100
                 }
             ],
-            // Nouveaux jeux Vrai/Faux - Alerter
             {
                 type: 'true-false',
-                title: 'Partie 6 - Vrai ou Faux',
-                question: 'Le numéro 112 fonctionne dans tous les pays de l\'Union Européenne.',
+                title: 'Numéro 112',
+                question: 'Le numéro 112 fonctionne dans tous les pays de l\'UE.',
                 options: ['Vrai', 'Faux'],
                 correctAnswer: 0,
-                explanation: 'VRAI - Le 112 est le numéro d\'urgence européen unique. Il est gratuit et accessible partout dans l\'UE, même sans réseau de votre opérateur.',
+                explanation: 'VRAI - Le 112 est le numéro d\'urgence européen unique. Il est gratuit et accessible partout dans l\'UE.',
                 timeLimit: 45,
                 points: 90
             },
             {
-                type: 'true-false',
-                title: 'Partie 6 - Vrai ou Faux',
-                question: 'On peut raccrocher dès que l\'on a donné l\'adresse et le nombre de victimes.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 1,
-                explanation: 'FAUX - Il faut toujours attendre que le régulateur vous dise de raccrocher. Il peut avoir besoin d\'informations complémentaires ou vous donner des consignes.',
-                timeLimit: 50,
-                points: 95
+                type: 'matching',
+                title: 'Numéros d\'urgence',
+                question: 'Associez chaque numéro à son service :',
+                pairs: [
+                    { left: '15', right: 'SAMU' },
+                    { left: '18', right: 'Pompiers' },
+                    { left: '112', right: 'Numéro européen' },
+                    { left: '114', right: 'Sourds et malentendants' }
+                ],
+                timeLimit: 75,
+                points: 120
             },
             {
-                type: 'true-false',
-                title: 'Partie 6 - Vrai ou Faux',
-                question: 'Si on est seul face à une victime en arrêt cardiaque, il faut d\'abord commencer la réanimation avant d\'alerter.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 1,
-                explanation: 'FAUX - L\'alerte est prioritaire en cas d\'arrêt cardiaque. Il faut d\'abord alerter (ou faire alerter) pour que les secours arrivent le plus vite possible, puis commencer la réanimation.',
-                timeLimit: 55,
-                points: 100
-            },
-            // Jeu 2 avec 5 variations
-            [
-                {
-                    type: 'quiz',
-                    title: 'Partie 6 - Moyens d\'alerte',
-                    question: 'Quel est le meilleur moyen pour alerter les secours ?',
-                    options: [
-                        'Envoyer un SMS',
-                        'Téléphoner',
-                        'Envoyer quelqu\'un prévenir',
-                        'Crier'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 50,
-                    points: 100
-                },
-                {
-                    type: 'sequence',
-                    title: 'Partie 6 - Faire alerter',
-                    question: 'Si vous faites alerter par un témoin, dans quel ordre procéder :',
-                    items: [
-                        'Désigner une personne précise',
-                        'Lui dire quel numéro appeler',
-                        'Lui dire quoi dire',
-                        'Lui demander de revenir vous informer'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'matching',
-                    title: 'Partie 6 - Situations et numéros',
-                    question: 'Associez chaque situation au numéro approprié :',
-                    pairs: [
-                        { left: 'Malaise cardiaque', right: '15 - SAMU' },
-                        { left: 'Incendie', right: '18 - Pompiers' },
-                        { left: 'Agression', right: '17 - Police' },
-                        { left: 'En Europe (voyage)', right: '112' }
-                    ],
-                    timeLimit: 85,
-                    points: 130
-                },
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 6 - Règles de l\'alerte',
-                    question: 'Quelles sont les règles à respecter lors de l\'alerte ? (Plusieurs réponses)',
-                    options: [
-                        'Rester calme',
-                        'Parler vite pour gagner du temps',
-                        'Répondre aux questions',
-                        'Raccrocher en premier',
-                        'Donner des informations précises',
-                        'Inventer si on ne sait pas'
-                    ],
-                    correctAnswers: [0, 2, 4],
-                    timeLimit: 75,
-                    points: 130
-                }
-            ]
+                type: 'sequence',
+                title: 'Contenu de l\'alerte',
+                question: 'Ordre des informations à donner aux secours :',
+                items: [
+                    'Lieu exact et accès',
+                    'Nature de l\'accident',
+                    'Nombre et état des victimes',
+                    'Gestes déjà effectués'
+                ],
+                correctOrder: [0, 1, 2, 3],
+                timeLimit: 70,
+                points: 120
+            }
         ]
     },
     {
-        title: 'DC2 - Secourir',
-        subtitle: 'Hémorragie externe',
-        icon: '🩸',
-        color: 'from-red-600 to-pink-700',
-        games: [
-            // Jeu 1 avec 6 variations
-            [
-                {
-                    type: 'sequence',
-                    title: 'Partie 7.1 - Arrêter une hémorragie',
-                    question: 'Remettez dans l\'ordre les étapes pour arrêter une hémorragie externe :',
-                    items: [
-                        'Allonger la victime',
-                        'Comprimer directement sur la plaie',
-                        'Faire alerter les secours',
-                        'Surveiller la victime'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 70,
-                    points: 120
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.1 - Compression directe',
-                    question: 'Avec quoi effectuez-vous la compression directe en priorité ?',
-                    options: [
-                        'Avec un garrot',
-                        'Avec vos mains protégées',
-                        'Avec un pansement compressif',
-                        'En surélevant simplement le membre'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 55,
-                    points: 110
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.1 - Protection',
-                    question: 'Pourquoi faut-il se protéger avant de comprimer une plaie ?',
-                    options: [
-                        'Pour ne pas salir ses mains',
-                        'Pour se protéger du sang (risque infectieux)',
-                        'Ce n\'est pas obligatoire',
-                        'Pour ne pas faire mal à la victime'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 60,
-                    points: 100
-                },
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 7.1 - Matériel de compression',
-                    question: 'Avec quoi peut-on comprimer une plaie ? (Plusieurs réponses)',
-                    options: [
-                        'Main protégée par un gant',
-                        'Compresse propre',
-                        'Linge propre',
-                        'Main nue si rien d\'autre',
-                        'Un mouchoir sale',
-                        'Un tissu propre'
-                    ],
-                    correctAnswers: [0, 1, 2, 3, 5],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.1 - Durée de compression',
-                    question: 'Combien de temps faut-il maintenir la compression ?',
-                    options: [
-                        '1 minute',
-                        '5 minutes',
-                        'Jusqu\'à l\'arrivée des secours',
-                        '10 secondes'
-                    ],
-                    correctAnswer: 2,
-                    timeLimit: 55,
-                    points: 100
-                },
-                {
-                    type: 'quiz-illustrated',
-                    illustrationFunction: 'getCompressionSVG',
-                    title: 'Partie 7.1 - Geste de compression',
-                    question: 'Pourquoi faut-il protéger ses mains avant de comprimer une plaie qui saigne ?',
-                    options: [
-                        'Pour ne pas salir ses mains',
-                        'Pour se protéger du risque infectieux (sang)',
-                        'Ce n\'est pas nécessaire',
-                        'Pour ne pas faire mal à la victime'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 70,
-                    points: 110
-                }
-            ],
-            // Nouveaux jeux Vrai/Faux - Hémorragie
-            {
-                type: 'true-false',
-                title: 'Partie 7.1 - Vrai ou Faux',
-                question: 'Il faut toujours utiliser un garrot en cas d\'hémorragie importante.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 1,
-                explanation: 'FAUX - Le garrot n\'est utilisé qu\'en dernier recours si la compression directe est impossible ou inefficace (membre arraché, écrasement, plusieurs victimes). La compression directe est la technique de premier choix.',
-                timeLimit: 55,
-                points: 100
-            },
-            {
-                type: 'true-false',
-                title: 'Partie 7.1 - Vrai ou Faux',
-                question: 'On peut relâcher la compression pour vérifier si le saignement s\'est arrêté.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 1,
-                explanation: 'FAUX - Il ne faut JAMAIS relâcher la compression. Elle doit être maintenue jusqu\'à l\'arrivée des secours spécialisés qui prendront le relais.',
-                timeLimit: 50,
-                points: 95
-            },
-            {
-                type: 'true-false',
-                title: 'Partie 7.1 - Vrai ou Faux',
-                question: 'Une hémorragie externe est toujours visible à l\'œil nu.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - Une hémorragie externe est par définition un saignement abondant visible qui ne s\'arrête pas spontanément. Une hémorragie interne, elle, n\'est pas visible.',
-                timeLimit: 45,
-                points: 90
-            },
-            // Jeu 2 avec 5 variations
-            [
-                {
-                    type: 'matching',
-                    title: 'Partie 7.1 - Types d\'hémorragies',
-                    question: 'Associez chaque saignement à sa catégorie :',
-                    pairs: [
-                        { left: 'Saignement abondant qui ne s\'arrête pas', right: 'Hémorragie' },
-                        { left: 'Petit saignement qui s\'arrête seul', right: 'Plaie simple' },
-                        { left: 'Sang qui coule en nappe', right: 'Hémorragie veineuse' },
-                        { left: 'Sang qui jaillit par jets', right: 'Hémorragie artérielle' }
-                    ],
-                    timeLimit: 90,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.1 - Position de la victime',
-                    question: 'Quelle position adopter pour une victime qui saigne abondamment ?',
-                    options: [
-                        'Debout',
-                        'Allongée',
-                        'Assise',
-                        'En position latérale de sécurité'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 55,
-                    points: 100
-                },
-                {
-                    type: 'sequence',
-                    title: 'Partie 7.1 - Relais de compression',
-                    question: 'Si vous devez relayer la compression, dans quel ordre :',
-                    items: [
-                        'Préparer le relais (gants, compresse)',
-                        'Positionner ses mains à côté des vôtres',
-                        'Le relais appuie, vous retirez vos mains',
-                        'Vérifier que la compression est efficace'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 7.1 - Surveillance',
-                    question: 'Que devez-vous surveiller chez une victime qui saigne ? (Plusieurs réponses)',
-                    options: [
-                        'La conscience',
-                        'La respiration',
-                        'L\'efficacité de la compression',
-                        'Sa température',
-                        'L\'apparition de pâleur/sueurs',
-                        'Son humeur'
-                    ],
-                    correctAnswers: [0, 1, 2, 4],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'puzzle-text',
-                    title: 'Partie 7.1 - Conduite à tenir complète',
-                    question: 'Reconstituez la conduite à tenir face à une hémorragie :',
-                    pieces: [
-                        '1. Allonger la victime',
-                        '2. Comprimer la plaie',
-                        '3. Faire alerter le 15',
-                        '4. Surveiller en attendant les secours'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                }
-            ]
-        ]
-    },
-    {
-        title: 'DC2 - Secourir',
-        subtitle: 'Obstruction des voies aériennes',
-        icon: '😮',
-        color: 'from-purple-500 to-purple-700',
-        games: [
-            // Jeu 1 avec 6 variations
-            [
-                {
-                    type: 'matching',
-                    title: 'Partie 7.2 - Obstruction partielle vs totale',
-                    question: 'Associez les signes avec le type d\'obstruction :',
-                    pairs: [
-                        { left: 'La victime peut parler', right: 'Obstruction partielle' },
-                        { left: 'La victime ne peut plus parler ni tousser', right: 'Obstruction totale' },
-                        { left: 'La victime tousse vigoureusement', right: 'Obstruction partielle' },
-                        { left: 'Impossibilité de respirer', right: 'Obstruction totale' }
-                    ],
-                    timeLimit: 85,
-                    points: 130
-                },
-                {
-                    type: 'sequence',
-                    title: 'Partie 7.2 - Obstruction totale',
-                    question: 'Ordre des gestes en cas d\'obstruction totale (adulte) :',
-                    items: [
-                        'Donner 5 claques dans le dos',
-                        'Si inefficace : 5 compressions abdominales',
-                        'Alterner claques/compressions',
-                        'Si inconscient : RCP'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.2 - Obstruction partielle',
-                    question: 'Que faire en cas d\'obstruction partielle ?',
-                    options: [
-                        'Donner des claques dans le dos',
-                        'Faire des compressions abdominales',
-                        'Encourager la victime à tousser',
-                        'Mettre les doigts dans la bouche'
-                    ],
-                    correctAnswer: 2,
-                    timeLimit: 60,
-                    points: 110
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.2 - Claques dans le dos',
-                    question: 'Où donner les claques dans le dos ?',
-                    options: [
-                        'En bas du dos',
-                        'Entre les deux omoplates',
-                        'Sur la nuque',
-                        'Sur le côté'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 55,
-                    points: 100
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.2 - Compressions abdominales',
-                    question: 'Où placer le poing pour les compressions abdominales (méthode de Heimlich) ?',
-                    options: [
-                        'Sur le sternum',
-                        'Sur le nombril',
-                        'Entre le nombril et l\'extrémité inférieure du sternum',
-                        'Sur les côtes'
-                    ],
-                    correctAnswer: 2,
-                    timeLimit: 65,
-                    points: 110
-                },
-                {
-                    type: 'quiz-illustrated',
-                    illustrationFunction: 'getHeimlichSVG',
-                    title: 'Partie 7.2 - Position des mains',
-                    question: 'Où doit-on placer le poing pour effectuer les compressions abdominales (méthode de Heimlich) ?',
-                    options: [
-                        'Sur le sternum',
-                        'Entre le nombril et le sternum',
-                        'Sur le nombril',
-                        'En bas du dos'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 70,
-                    points: 110
-                }
-            ],
-            // Nouveaux jeux Vrai/Faux - Obstruction
-            {
-                type: 'true-false',
-                title: 'Partie 7.2 - Vrai ou Faux',
-                question: 'On doit encourager la victime à tousser si elle présente une obstruction partielle.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - Si la victime peut encore tousser, parler ou respirer (obstruction partielle), il faut l\'encourager à tousser vigoureusement car c\'est le moyen le plus efficace pour expulser le corps étranger.',
-                timeLimit: 50,
-                points: 95
-            },
-            {
-                type: 'true-false',
-                title: 'Partie 7.2 - Vrai ou Faux',
-                question: 'Les compressions abdominales (Heimlich) peuvent être utilisées sur une femme enceinte.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 1,
-                explanation: 'FAUX - Sur une femme enceinte ou une personne obèse, on réalise des compressions thoraciques à la place des compressions abdominales pour éviter de comprimer l\'abdomen.',
-                timeLimit: 55,
-                points: 100
-            },
-            {
-                type: 'true-false',
-                title: 'Partie 7.2 - Vrai ou Faux',
-                question: 'Si la victime devient inconsciente suite à une obstruction totale, on doit commencer la RCP.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - Si la victime perd conscience, on l\'installe au sol et on commence immédiatement la réanimation cardio-pulmonaire (RCP) avec 30 compressions thoraciques.',
-                timeLimit: 55,
-                points: 100
-            },
-            // Jeu 2 avec 5 variations
-            [
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 7.2 - Signes d\'obstruction totale',
-                    question: 'Quels sont les signes d\'une obstruction totale ? (Plusieurs réponses)',
-                    options: [
-                        'Impossibilité de parler',
-                        'Toux vigoureuse',
-                        'Impossibilité de tousser',
-                        'Geste de la main à la gorge',
-                        'Parle normalement',
-                        'Cyanose (bleuissement)'
-                    ],
-                    correctAnswers: [0, 2, 3, 5],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.2 - Nourrisson',
-                    question: 'Pour un nourrisson en obstruction totale, que faire au lieu des compressions abdominales ?',
-                    options: [
-                        'Compressions thoraciques',
-                        'Rien, attendre les secours',
-                        'Secouer le bébé',
-                        'Mettre le doigt dans la bouche'
-                    ],
-                    correctAnswer: 0,
-                    timeLimit: 60,
-                    points: 110
-                },
-                {
-                    type: 'sequence',
-                    title: 'Partie 7.2 - Si victime inconsciente',
-                    question: 'Si la victime devient inconsciente pendant la désobstruction :',
-                    items: [
-                        'Allonger la victime sur le dos',
-                        'Faire alerter le 15',
-                        'Débuter immédiatement la RCP',
-                        'Vérifier la bouche entre les cycles'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'matching',
-                    title: 'Partie 7.2 - Techniques selon l\'âge',
-                    question: 'Associez la technique à la catégorie de victime :',
-                    pairs: [
-                        { left: 'Claques dans le dos + Heimlich', right: 'Adulte' },
-                        { left: 'Claques dans le dos + compressions thoraciques', right: 'Nourrisson' },
-                        { left: 'Même technique que l\'adulte', right: 'Enfant' },
-                        { left: 'Adaptée à la taille', right: 'Femme enceinte' }
-                    ],
-                    timeLimit: 90,
-                    points: 130
-                },
-                {
-                    type: 'puzzle-text',
-                    title: 'Partie 7.2 - Procédure complète',
-                    question: 'Ordre de la procédure en cas d\'obstruction totale :',
-                    pieces: [
-                        '1. Encourager à tousser (si partielle)',
-                        '2. 5 claques dans le dos',
-                        '3. 5 compressions abdominales',
-                        '4. Alterner jusqu\'à désobstruction ou perte de conscience'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 80,
-                    points: 130
-                }
-            ]
-        ]
-    },
-    {
-        title: 'DC2 - Secourir',
-        subtitle: 'PLS et Arrêt cardiaque',
-        icon: '💓',
-        color: 'from-pink-500 to-red-600',
-        games: [
-            // Jeu 1 avec 7 variations
-            [
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.3 - Position Latérale de Sécurité',
-                    question: 'Quand met-on une victime en Position Latérale de Sécurité (PLS) ?',
-                    options: [
-                        'Victime consciente avec douleur',
-                        'Victime inconsciente qui respire',
-                        'Victime en arrêt cardiaque',
-                        'Victime avec hémorragie'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 50,
-                    points: 100
-                },
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 7.4 - Arrêt cardiaque',
-                    question: 'Quels sont les signes d\'un arrêt cardiaque ? (Plusieurs réponses)',
-                    options: [
-                        'Victime inconsciente',
-                        'Victime ne respire pas',
-                        'Victime respire normalement',
-                        'Absence de réaction',
-                        'Victime parle'
-                    ],
-                    correctAnswers: [0, 1, 3],
-                    timeLimit: 70,
-                    points: 130
-                },
-                {
-                    type: 'sequence',
-                    title: 'Partie 7.4 - Réanimation cardio-pulmonaire',
-                    question: 'Ordre des étapes de la RCP :',
-                    items: [
-                        'Placer les mains au centre du thorax',
-                        '30 compressions thoraciques',
-                        '2 insufflations',
-                        'Poursuivre les cycles 30/2'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 70,
-                    points: 120
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.4 - Fréquence des compressions',
-                    question: 'À quelle fréquence doivent être réalisées les compressions thoraciques ?',
-                    options: [
-                        '60 par minute',
-                        '100 à 120 par minute',
-                        '150 par minute',
-                        '30 par minute'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 60,
-                    points: 110
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.4 - Profondeur des compressions',
-                    question: 'Quelle doit être la profondeur des compressions thoraciques chez l\'adulte ?',
-                    options: [
-                        '2 cm',
-                        '5 à 6 cm',
-                        '10 cm',
-                        '1 cm'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 55,
-                    points: 100
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.3 - Pourquoi la PLS ?',
-                    question: 'Pourquoi met-on une victime inconsciente qui respire en PLS ?',
-                    options: [
-                        'Pour qu\'elle soit plus confortable',
-                        'Pour libérer les voies aériennes et éviter l\'obstruction',
-                        'Pour prendre le pouls',
-                        'Ce n\'est pas nécessaire'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 65,
-                    points: 110
-                },
-                {
-                    type: 'quiz-illustrated',
-                    illustrationFunction: 'getRCPHandsSVG',
-                    title: 'Partie 7.4 - Position des mains RCP',
-                    question: 'Quelle est la profondeur des compressions thoraciques lors de la RCP chez l\'adulte ?',
-                    options: [
-                        '2-3 cm',
-                        '5-6 cm',
-                        '10 cm',
-                        '1 cm'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 70,
-                    points: 110
-                }
-            ],
-            // Nouveaux jeux Vrai/Faux - PLS et RCP
-            {
-                type: 'true-false',
-                title: 'Partie 7.3/7.4 - Vrai ou Faux',
-                question: 'La fréquence des compressions thoraciques doit être de 100 à 120 compressions par minute.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - Le rythme optimal des compressions thoraciques est de 100 à 120 par minute, soit environ 2 compressions par seconde (rythme de "Staying Alive").',
-                timeLimit: 50,
-                points: 95
-            },
-            {
-                type: 'true-false',
-                title: 'Partie 7.4 - Vrai ou Faux',
-                question: 'On doit arrêter la RCP dès qu\'on a posé le défibrillateur (DAE).',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 1,
-                explanation: 'FAUX - On continue la RCP pendant que le DAE s\'installe et analyse. On ne s\'arrête que lorsque le DAE demande de ne pas toucher la victime.',
-                timeLimit: 55,
-                points: 100
-            },
-            {
-                type: 'true-false',
-                title: 'Partie 7.3 - Vrai ou Faux',
-                question: 'Une victime en PLS doit être surveillée en permanence jusqu\'à l\'arrivée des secours.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - La victime en PLS doit être surveillée en permanence car son état peut évoluer (arrêt de la respiration, vomissements, etc.).',
-                timeLimit: 50,
-                points: 95
-            },
-            // Jeu 2 avec 6 variations
-            [
-                {
-                    type: 'matching',
-                    title: 'Partie 7.4 - Gestes et situations',
-                    question: 'Associez chaque geste à la situation appropriée :',
-                    pairs: [
-                        { left: 'PLS', right: 'Inconscient qui respire' },
-                        { left: 'RCP', right: 'Arrêt cardiaque' },
-                        { left: 'Libération Voies Aériennes', right: 'Vérifier la respiration' },
-                        { left: 'DAE', right: 'Arrêt cardiaque' }
-                    ],
-                    timeLimit: 85,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.4 - Défibrillateur (DAE)',
-                    question: 'Quand utiliser le défibrillateur automatisé externe (DAE) ?',
-                    options: [
-                        'Sur toute victime inconsciente',
-                        'Uniquement sur une victime en arrêt cardiaque',
-                        'Sur une victime qui respire mal',
-                        'Jamais, c\'est réservé aux médecins'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 65,
-                    points: 110
-                },
-                {
-                    type: 'sequence',
-                    title: 'Partie 7.4 - Utilisation du DAE',
-                    question: 'Ordre d\'utilisation du défibrillateur :',
-                    items: [
-                        'Mettre en marche le DAE',
-                        'Coller les électrodes sur la peau nue',
-                        'Laisser le DAE analyser',
-                        'Si choc conseillé : s\'écarter et appuyer sur le bouton'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz-illustrated',
-                    illustrationFunction: 'getPLSSVG',
-                    title: 'Partie 7.3 - Position Latérale de Sécurité',
-                    question: 'Quelle est l\'angle de la jambe du dessus dans la Position Latérale de Sécurité (PLS) ?',
-                    options: [
-                        'Jambe tendue',
-                        'Jambe pliée à 45°',
-                        'Jambe pliée à 90°',
-                        'Jambe croisée'
-                    ],
-                    correctAnswer: 2,
-                    timeLimit: 70,
-                    points: 110
-                },
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 7.3 - Surveillance en PLS',
-                    question: 'Que devez-vous surveiller chez une victime en PLS ? (Plusieurs réponses)',
-                    options: [
-                        'La respiration',
-                        'La conscience',
-                        'Qu\'elle ne vomisse pas',
-                        'Ses cheveux',
-                        'La couleur de sa peau',
-                        'Ses chaussures'
-                    ],
-                    correctAnswers: [0, 1, 2, 4],
-                    timeLimit: 70,
-                    points: 130
-                },
-                {
-                    type: 'puzzle-text',
-                    title: 'Partie 7.3 - Étapes de la PLS',
-                    question: 'Reconstituez les étapes de mise en PLS :',
-                    pieces: [
-                        '1. Allonger la victime sur le dos',
-                        '2. Préparer le retournement (bras, jambe)',
-                        '3. Retourner la victime sur le côté',
-                        '4. Stabiliser et basculer la tête en arrière'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 7.4 - Arrêt de la RCP',
-                    question: 'Quand peut-on arrêter la réanimation cardio-pulmonaire ?',
-                    options: [
-                        'Après 5 minutes',
-                        'Quand on est fatigué',
-                        'Quand les secours prennent le relais ou si la victime réagit',
-                        'Jamais'
-                    ],
-                    correctAnswer: 2,
-                    timeLimit: 65,
-                    points: 110
-                }
-            ]
-        ]
-    },
-    {
-        title: 'DC2 - Secourir',
-        subtitle: 'Situations spécifiques',
+        title: 'DC4 - Prévention',
+        subtitle: 'Situations spécifiques et prévention',
         icon: '🏥',
-        color: 'from-indigo-500 to-blue-700',
+        color: 'from-purple-500 to-pink-600',
         games: [
-            // Jeu 1 avec 7 variations
             [
                 {
-                    type: 'matching',
-                    title: 'Partie 8 - Malaises et traumatismes',
-                    question: 'Associez chaque situation avec la conduite à tenir :',
-                    pairs: [
-                        { left: 'Malaise cardiaque', right: 'Position confortable + alerter' },
-                        { left: 'Brûlure', right: 'Refroidir 5 min minimum' },
-                        { left: 'Traumatisme cervical', right: 'Ne pas mobiliser' },
-                        { left: 'Plaie grave', right: 'Protéger sans retirer corps étranger' }
-                    ],
-                    timeLimit: 90,
-                    points: 140
-                },
-                {
-                    type: 'quiz-illustrated',
-                    illustrationFunction: 'getRCPHandsSVG',
-                    title: 'Partie 8 - Position RCP',
-                    question: 'Où doit-on placer les mains lors d\'une réanimation cardio-pulmonaire (RCP) ?',
-                    options: [
-                        'Au centre du thorax (sternum)',
-                        'Sur les côtes',
-                        'Sur le ventre',
-                        'Sur le cou'
-                    ],
-                    correctAnswer: 0,
-                    timeLimit: 70,
-                    points: 110
-                },
-                {
                     type: 'quiz',
-                    title: 'Partie 8 - Brûlures',
-                    question: 'Combien de temps faut-il refroidir une brûlure à l\'eau tempérée ?',
+                    title: 'Rôle de prévention',
+                    question: 'En plus des secours, quel est l\'autre rôle majeur du SST ?',
                     options: [
-                        '30 secondes',
-                        '5 minutes minimum',
-                        '1 minute',
-                        'Jusqu\'à ce que ça ne fasse plus mal'
+                        'Nettoyer les lieux',
+                        'Participer à la prévention des risques',
+                        'Former les autres',
+                        'Gérer la trousse'
                     ],
                     correctAnswer: 1,
-                    timeLimit: 60,
+                    timeLimit: 55,
                     points: 100
                 },
                 {
                     type: 'quiz',
-                    title: 'Partie 8 - Malaise',
-                    question: 'Quelle position donner à une victime consciente qui fait un malaise ?',
+                    title: 'Défibrillateur',
+                    question: 'Le SST peut-il utiliser un défibrillateur automatisé externe (DAE) ?',
                     options: [
-                        'Debout',
-                        'Position confortable choisie par la victime',
-                        'Allongée sur le ventre',
-                        'Position assise forcée'
+                        'Non, formation spécifique requise',
+                        'Oui, tout citoyen peut l\'utiliser',
+                        'Seulement les pompiers',
+                        'Sur prescription uniquement'
                     ],
                     correctAnswer: 1,
                     timeLimit: 60,
@@ -3170,169 +1913,57 @@ const boxesData = [
                 },
                 {
                     type: 'quiz-multi',
-                    title: 'Partie 8 - Signes de malaise grave',
-                    question: 'Quels sont les signes d\'un malaise grave ? (Plusieurs réponses)',
+                    title: 'Prévention au travail',
+                    question: 'Comment le SST participe à la prévention ? (Plusieurs réponses)',
                     options: [
-                        'Douleur thoracique',
-                        'Difficulté à parler',
-                        'Léger mal de tête',
-                        'Perte de connaissance',
-                        'Sueurs abondantes',
-                        'Petite fatigue'
+                        'Repérer les situations dangereuses',
+                        'Informer sa hiérarchie',
+                        'Proposer des améliorations',
+                        'Remplacer le CHSCT',
+                        'Participer aux actions de prévention'
                     ],
-                    correctAnswers: [0, 1, 3, 4],
-                    timeLimit: 75,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 8 - Plaie avec corps étranger',
-                    question: 'Que faire face à une plaie avec un corps étranger (couteau, morceau de verre...) ?',
-                    options: [
-                        'Retirer le corps étranger',
-                        'Ne jamais retirer le corps étranger',
-                        'Le bouger pour voir',
-                        'Appuyer dessus'
-                    ],
-                    correctAnswer: 1,
-                    timeLimit: 60,
-                    points: 110
-                },
-                {
-                    type: 'sequence',
-                    title: 'Partie 8 - Traumatisme de membre',
-                    question: 'Conduite à tenir face à un traumatisme de membre :',
-                    items: [
-                        'Éviter de mobiliser le membre',
-                        'Alerter les secours',
-                        'Surveiller la victime',
-                        'Maintenir le membre dans la position trouvée'
-                    ],
-                    correctOrder: [0, 3, 1, 2],
-                    timeLimit: 75,
-                    points: 130
-                }
-            ],
-            // Nouveaux jeux Vrai/Faux - Situations spécifiques
-            {
-                type: 'true-false',
-                title: 'Partie 8 - Vrai ou Faux',
-                question: 'Une brûlure doit être refroidie à l\'eau froide pendant au moins 5 minutes.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - Le refroidissement à l\'eau tempérée (15-25°C) doit durer au moins 5 minutes pour limiter l\'extension de la brûlure et soulager la douleur.',
-                timeLimit: 50,
-                points: 95
-            },
-            {
-                type: 'true-false',
-                title: 'Partie 8 - Vrai ou Faux',
-                question: 'On doit retirer un corps étranger planté dans une plaie pour mieux la soigner.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 1,
-                explanation: 'FAUX - Il ne faut JAMAIS retirer un corps étranger d\'une plaie. Cela pourrait provoquer une hémorragie importante ou aggraver les lésions. Seul un médecin peut le faire.',
-                timeLimit: 50,
-                points: 95
-            },
-            {
-                type: 'true-false',
-                title: 'Partie 8 - Vrai ou Faux',
-                question: 'En cas de traumatisme du dos ou de la nuque, il faut éviter tout déplacement de la victime.',
-                options: ['Vrai', 'Faux'],
-                correctAnswer: 0,
-                explanation: 'VRAI - Un traumatisme de la colonne vertébrale peut être aggravé par tout mouvement. Il faut maintenir la victime dans la position trouvée et attendre les secours spécialisés.',
-                timeLimit: 55,
-                points: 100
-            },
-            // Jeu 2 avec 6 variations
-            [
-                {
-                    type: 'matching',
-                    title: 'Partie 8 - Types de plaies',
-                    question: 'Associez chaque type de plaie à sa définition :',
-                    pairs: [
-                        { left: 'Plaie simple', right: 'Petite, propre, ne saigne pas' },
-                        { left: 'Plaie grave', right: 'Large, profonde, avec corps étranger' },
-                        { left: 'Brûlure 1er degré', right: 'Rougeur sans cloque' },
-                        { left: 'Brûlure 2e degré', right: 'Avec cloques' }
-                    ],
-                    timeLimit: 90,
-                    points: 130
-                },
-                {
-                    type: 'quiz',
-                    title: 'Partie 8 - Fracture',
-                    question: 'Comment savoir si un membre est fracturé ?',
-                    options: [
-                        'La victime ressent une douleur vive et ne peut pas bouger le membre',
-                        'Le membre est chaud',
-                        'La peau change de couleur',
-                        'On ne peut jamais savoir'
-                    ],
-                    correctAnswer: 0,
-                    timeLimit: 65,
-                    points: 110
-                },
-                {
-                    type: 'quiz-multi',
-                    title: 'Partie 8 - Brûlure grave',
-                    question: 'Quels critères font qu\'une brûlure est grave ? (Plusieurs réponses)',
-                    options: [
-                        'Étendue importante',
-                        'Localisation (visage, mains, organes génitaux)',
-                        'Profondeur (3e degré)',
-                        'Petite rougeur',
-                        'Victime est un enfant ou personne âgée',
-                        'Brûlure chimique ou électrique'
-                    ],
-                    correctAnswers: [0, 1, 2, 4, 5],
+                    correctAnswer: [0, 1, 2, 4],
                     timeLimit: 80,
                     points: 140
-                },
-                {
-                    type: 'sequence',
-                    title: 'Partie 8 - Plaie simple',
-                    question: 'Conduite à tenir face à une plaie simple :',
-                    items: [
-                        'Se laver les mains',
-                        'Nettoyer la plaie à l\'eau et au savon',
-                        'Rincer abondamment',
-                        'Protéger par un pansement'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 70,
-                    points: 120
-                },
-                {
-                    type: 'quiz-illustrated',
-                    illustrationFunction: 'getCompressionSVG',
-                    title: 'Partie 8 - Compression hémorragie',
-                    question: 'Combien de temps faut-il maintenir la compression sur une plaie qui saigne ?',
-                    options: [
-                        '1 minute',
-                        '5 minutes',
-                        'Jusqu\'à l\'arrivée des secours',
-                        '10 secondes'
-                    ],
-                    correctAnswer: 2,
-                    timeLimit: 70,
-                    points: 110
-                },
-                {
-                    type: 'puzzle-text',
-                    title: 'Partie 8 - Conduite générale',
-                    question: 'Ordre général de prise en charge d\'une victime :',
-                    pieces: [
-                        '1. Protéger',
-                        '2. Examiner',
-                        '3. Alerter',
-                        '4. Secourir et surveiller'
-                    ],
-                    correctOrder: [0, 1, 2, 3],
-                    timeLimit: 70,
-                    points: 120
                 }
-            ]
+            ],
+            {
+                type: 'true-false',
+                title: 'Recyclage',
+                question: 'Le certificat SST doit être recyclé tous les 2 ans.',
+                options: ['Vrai', 'Faux'],
+                correctAnswer: 0,
+                explanation: 'VRAI - Le recyclage SST doit avoir lieu tous les 24 mois pour maintenir la validité du certificat.',
+                timeLimit: 45,
+                points: 90
+            },
+            {
+                type: 'matching',
+                title: 'Acteurs de prévention',
+                question: 'Associez chaque acteur à son rôle :',
+                pairs: [
+                    { left: 'SST', right: 'Premiers secours et prévention' },
+                    { left: 'Médecin du travail', right: 'Santé des salariés' },
+                    { left: 'CHSCT/CSE', right: 'Représentation du personnel' },
+                    { left: 'Employeur', right: 'Responsable sécurité' }
+                ],
+                timeLimit: 90,
+                points: 130
+            },
+            {
+                type: 'sequence',
+                title: 'Démarche de prévention',
+                question: 'Remettez dans l\'ordre les étapes de la démarche de prévention :',
+                items: [
+                    'Repérer le danger',
+                    'Analyser les risques',
+                    'Proposer des solutions',
+                    'Informer et suivre'
+                ],
+                correctOrder: [0, 1, 2, 3],
+                timeLimit: 70,
+                points: 120
+            }
         ]
     }
 ];
@@ -3497,7 +2128,7 @@ function startListeningToStages() {
 
         // Vérifier si le jeu est en pause sur l'une des étapes
         let foundPause = false;
-        for (let i = 1; i <= 4; i++) {
+        for (let i = 1; i <= 2; i++) {
             const stage = stages[`stage${i}`];
             if (stage && stage.paused) {
                 foundPause = true;
@@ -4784,7 +3415,7 @@ function updatePauseButton(stages) {
     }
 
     // Vérifier s'il y a une étape en pause
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= 2; i++) {
         const stage = stages[`stage${i}`];
         if (stage && stage.paused === true) {
             // Le jeu est en pause sur cette étape
