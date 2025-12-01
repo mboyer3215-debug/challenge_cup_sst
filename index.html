@@ -960,6 +960,11 @@ function initAudio() {
 // ==================== SONS AMÉLIORÉS ====================
 
 function playSound(type, frequency = null) {
+
+  if (!audioContext) {
+        return;
+    }
+
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
