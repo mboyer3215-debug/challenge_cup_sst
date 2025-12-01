@@ -443,14 +443,14 @@
             </div>
 
             <!-- Boutons de validation -->
-            <div id="game-controls" class="mt-6 flex gap-4">
-                <button id="validate-btn" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xl font-bold py-5 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+            <div id="game-controls" class="mt-6 flex flex-col md:flex-row gap-3">
+                <button id="validate-btn" class="w-full md:flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-lg md:text-xl font-bold py-4 md:py-5 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
                     ✓ Valider la Réponse
                 </button>
-                <button id="skip-question-btn" class="px-6 bg-gradient-to-r from-yellow-500 to-orange-600 text-white text-xl font-bold py-5 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+                <button id="skip-question-btn" class="w-full md:w-auto md:px-8 bg-gradient-to-r from-yellow-500 to-orange-600 text-white text-lg md:text-xl font-bold py-4 md:py-5 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
                     ⏭️ Passer
                 </button>
-                <button id="reset-answer-btn" class="hidden px-6 bg-gradient-to-r from-orange-500 to-red-600 text-white text-xl font-bold py-5 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
+                <button id="reset-answer-btn" class="hidden w-full md:w-auto md:px-8 bg-gradient-to-r from-orange-500 to-red-600 text-white text-lg md:text-xl font-bold py-4 md:py-5 rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
                     🔄 Réinitialiser
                 </button>
             </div>
@@ -509,15 +509,9 @@
                     <!-- Stats seront ajoutées dynamiquement -->
                 </div>
 
-                <div class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Voulez-vous rejouer ?</div>
-                <div class="flex justify-center gap-6">
-                    <button id="restart-yes-btn" class="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl font-bold py-6 px-12 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300">
-                        ✅ Oui
-                    </button>
-                    <button id="restart-no-btn" class="bg-gradient-to-r from-red-500 to-red-600 text-white text-2xl font-bold py-6 px-12 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300">
-                        ❌ Non
-                    </button>
-                </div>
+                <button id="restart-btn" class="bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white text-3xl font-bold py-8 px-16 rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 glow">
+                    🔄 Recommencer l'Aventure
+                </button>
             </div>
         </div>
 
@@ -913,42 +907,6 @@ function initializeFirebase() {
             }
         });
 
-        // Charger les données modifiées depuis Firebase (si elles existent)
-        loadBoxesDataFromFirebase()
-            .then(loadedData => {
-                if (loadedData) {
-                    boxesData.length = 0;
-                    boxesData.push(...loadedData);
-                    console.log('🎮 Données du jeu chargées depuis Firebase');
-                } else {
-                    console.log('🎮 Utilisation des données par défaut');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Erreur chargement données:', error);
-                console.log('🎮 Utilisation des données par défaut');
-            });
-
-        // Écouter les modifications admin en temps réel
-        database.ref('admin_config/sst_data').on('value', (snapshot) => {
-            const savedData = snapshot.val();
-            if (savedData) {
-                try {
-                    const parsed = JSON.parse(savedData);
-                    boxesData.length = 0;
-                    boxesData.push(...parsed);
-                    console.log('🔄 Données du jeu mises à jour en temps réel depuis Firebase');
-                } catch (error) {
-                    console.error('❌ Erreur parsing données temps réel:', error);
-                }
-            } else {
-                // Les données ont été supprimées (réinitialisation)
-                boxesData.length = 0;
-                boxesData.push(...JSON.parse(JSON.stringify(defaultBoxesData)));
-                console.log('🔄 Données réinitialisées aux valeurs par défaut');
-            }
-        });
-
         return true;
     } catch (error) {
         console.error('❌ Erreur d\'initialisation Firebase:', error);
@@ -996,11 +954,6 @@ const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 // ==================== SONS AMÉLIORÉS ====================
 
 function playSound(type, frequency = null) {
-    // Sons désactivés pour les joueurs (seul le superviseur a le son)
-    if (appMode === 'player') {
-        return; // Pas de son pour les joueurs
-    }
-
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
@@ -1673,8 +1626,7 @@ function createChestOpenEffect(element) {
 
 // ==================== DONNÉES DU JEU ====================
 
-// Données par défaut du jeu
-const defaultBoxesData = [
+const boxesData = [
     {
         title: 'DC1 - Protéger',
         subtitle: 'Situer son rôle et protéger',
@@ -2132,84 +2084,6 @@ const defaultBoxesData = [
     }
 ];
 
-// ==================== PERSISTENCE DES MODIFICATIONS ADMIN ====================
-
-// Sauvegarder les modifications dans Firebase
-function saveBoxesDataToFirebase() {
-    if (!database) {
-        console.error('❌ Firebase non initialisé');
-        return Promise.reject('Firebase non initialisé');
-    }
-
-    try {
-        const dataToSave = JSON.stringify(boxesData);
-        return database.ref('admin_config/sst_data').set(dataToSave)
-            .then(() => {
-                console.log('✅ Modifications sauvegardées dans Firebase');
-                return true;
-            })
-            .catch(error => {
-                console.error('❌ Erreur lors de la sauvegarde Firebase:', error);
-                return false;
-            });
-    } catch (error) {
-        console.error('❌ Erreur lors de la sauvegarde:', error);
-        return Promise.reject(error);
-    }
-}
-
-// Charger les données modifiées depuis Firebase
-function loadBoxesDataFromFirebase() {
-    if (!database) {
-        console.log('⚠️ Firebase non initialisé, utilisation des données par défaut');
-        return Promise.resolve(null);
-    }
-
-    return database.ref('admin_config/sst_data').once('value')
-        .then(snapshot => {
-            const savedData = snapshot.val();
-            if (savedData) {
-                try {
-                    const parsed = JSON.parse(savedData);
-                    console.log('📥 Données modifiées chargées depuis Firebase');
-                    return parsed;
-                } catch (error) {
-                    console.error('❌ Erreur parsing données Firebase:', error);
-                    return null;
-                }
-            }
-            return null;
-        })
-        .catch(error => {
-            console.error('❌ Erreur lors du chargement Firebase:', error);
-            return null;
-        });
-}
-
-// Réinitialiser aux données par défaut
-function resetToDefaultData() {
-    if (!database) {
-        console.error('❌ Firebase non initialisé');
-        return Promise.reject('Firebase non initialisé');
-    }
-
-    return database.ref('admin_config/sst_data').remove()
-        .then(() => {
-            console.log('🔄 Données réinitialisées aux valeurs par défaut');
-            // Recharger les données par défaut
-            boxesData.length = 0;
-            boxesData.push(...JSON.parse(JSON.stringify(defaultBoxesData)));
-            return true;
-        })
-        .catch(error => {
-            console.error('❌ Erreur lors de la réinitialisation:', error);
-            return false;
-        });
-}
-
-// Initialiser boxesData (sera chargé depuis Firebase après l'init)
-let boxesData = JSON.parse(JSON.stringify(defaultBoxesData)); // Deep copy par défaut
-
 // ==================== ÉTAT DU JEU ====================
 
 const gameState = {
@@ -2218,13 +2092,12 @@ const gameState = {
     currentVariationIndex: 0, // Index de la variation actuelle (pour recharger la même après reset)
     totalScore: 0,
     gameScore: 0,
-    attempts: 1,
-    maxAttempts: 1,
+    attempts: 3,
+    maxAttempts: 3,
     timeLeft: 60,
     timerInterval: null,
     boxesUnlocked: 0,
     pauseLifted: false, // Indique si le formateur a levé la pause
-    skipQuestionUsed: false, // Bouton "Passer la question" utilisé ou non
     stats: {
         gamesWon: 0,
         gamesLost: 0,
@@ -2436,45 +2309,31 @@ function generateQRCode() {
     // Utiliser origin + pathname pour éviter les paramètres existants
     let baseUrl = window.location.origin + window.location.pathname;
 
-    console.log('🔗 Génération QR Code - Base URL:', baseUrl);
-
-    // Créer l'URL avec les paramètres
-    let finalUrl;
-
-    // Si on est en local (file://), afficher un avertissement mais générer quand même
+    // Si on est en local (file://), afficher un message
     if (baseUrl.startsWith('file://')) {
-        const warningDiv = document.createElement('div');
-        warningDiv.className = 'mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-center';
-        warningDiv.innerHTML = `
-            <p class="text-xs text-yellow-800 dark:text-yellow-200 mb-1">⚠️ Mode local - QR code non fonctionnel</p>
-            <p class="text-xs text-yellow-700 dark:text-yellow-300">Hébergez le fichier en ligne (GitHub Pages, etc.)</p>
+        qrContainer.innerHTML = `
+            <div class="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <p class="text-sm text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Mode local détecté</p>
+                <p class="text-xs text-yellow-700 dark:text-yellow-300">
+                    Pour générer le QR code, hébergez d'abord le fichier en ligne<br>
+                    (GitHub Pages, serveur web, etc.)
+                </p>
+            </div>
         `;
-        qrContainer.appendChild(warningDiv);
-        // Utiliser l'URL file:// quand même pour affichage
-        finalUrl = baseUrl + '?mode=player&session=' + trainingSessionId;
-    } else {
-        const url = new URL(baseUrl);
-        url.searchParams.set('mode', 'player');
-        url.searchParams.set('session', trainingSessionId);
-        finalUrl = url.toString();
+        return;
     }
 
-    console.log('🔗 URL complète du QR code:', finalUrl);
+    const url = new URL(baseUrl);
+    url.searchParams.set('mode', 'player');
+    url.searchParams.set('session', trainingSessionId); // Ajouter le trainingSessionId
 
-    // Générer le QR code (même en local pour visualisation)
     new QRCode(qrContainer, {
-        text: finalUrl,
+        text: url.toString(),
         width: 200,
         height: 200,
-        colorDark: '#5D5CDE', // Bleu pour le thème SST
+        colorDark: '#5D5CDE',
         colorLight: '#ffffff',
     });
-
-    // Afficher l'URL sous le QR code pour faciliter le test
-    const urlDisplay = document.createElement('div');
-    urlDisplay.className = 'mt-3 text-xs text-gray-600 dark:text-gray-400 break-all p-2 bg-gray-100 dark:bg-gray-800 rounded';
-    urlDisplay.innerHTML = `<strong>URL:</strong><br>${finalUrl}`;
-    qrContainer.appendChild(urlDisplay);
 }
 
 // Initialisation au chargement
@@ -2482,10 +2341,11 @@ window.addEventListener('DOMContentLoaded', () => {
     // Initialiser Firebase en premier
     initializeFirebase();
 
-    generateQRCode();
-
     // Vérifier l'authentification et afficher l'écran approprié
     checkAuthentication();
+
+    // Générer le QR Code APRÈS checkAuthentication pour utiliser le bon trainingSessionId
+    generateQRCode();
 
     // Bouton Superviseur
     document.getElementById('supervisor-btn').addEventListener('click', () => {
@@ -2590,24 +2450,13 @@ window.addEventListener('DOMContentLoaded', () => {
         updateBoxesDisplay();
     });
 
-    // Bouton "Oui" - Rejouer
-    document.getElementById('restart-yes-btn').addEventListener('click', () => {
+    // Bouton recommencer
+    document.getElementById('restart-btn').addEventListener('click', () => {
         playSound('tick');
         resetGameState();
-        gameState.skipQuestionUsed = false; // Réinitialiser le bouton "Passer"
         showScreen('boxes-screen');
         renderBoxes();
         broadcastUpdate();
-    });
-
-    // Bouton "Non" - Fermer la page
-    document.getElementById('restart-no-btn').addEventListener('click', () => {
-        playSound('tick');
-        window.close(); // Fermer la page
-        // Si window.close() ne fonctionne pas (restrictions navigateur), afficher un message
-        setTimeout(() => {
-            showCustomAlert('Vous pouvez maintenant fermer cet onglet.');
-        }, 100);
     });
 
     // Bouton Arrêter le jeu (Superviseur)
@@ -2654,15 +2503,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 // Réinitialiser l'objet teams
                 teams = {};
-
-                // Réinitialiser les modifications admin (retour aux données par défaut)
-                resetToDefaultData()
-                    .then(() => {
-                        console.log('✅ Données du jeu réinitialisées aux valeurs par défaut');
-                    })
-                    .catch(err => {
-                        console.error('❌ Erreur réinitialisation données jeu:', err);
-                    });
 
                 // Envoyer une commande à tous les joueurs pour réinitialiser
                 sendCommand('reset_all');
@@ -3417,17 +3257,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 () => {
                     const count = applyTimeMultiplier(multiplier);
                     updateTimingStats();
-
-                    // Sauvegarder dans Firebase
-                    saveBoxesDataToFirebase()
-                        .then(() => {
-                            playSound('success');
-                            showCustomAlert(`✅ ${count} jeux ont été mis à jour et sauvegardés !`);
-                        })
-                        .catch(() => {
-                            playSound('success');
-                            showCustomAlert(`✅ ${count} jeux mis à jour (sauvegarde Firebase échouée)`);
-                        });
+                    playSound('success');
+                    showCustomAlert(`✅ ${count} jeux ont été mis à jour !`);
                 }
             );
         });
@@ -3447,17 +3278,8 @@ window.addEventListener('DOMContentLoaded', () => {
             () => {
                 const count = applyTimeMultiplier(multiplier);
                 updateTimingStats();
-
-                // Sauvegarder dans Firebase
-                saveBoxesDataToFirebase()
-                    .then(() => {
-                        playSound('success');
-                        showCustomAlert(`✅ ${count} jeux ont été mis à jour et sauvegardés !`);
-                    })
-                    .catch(() => {
-                        playSound('success');
-                        showCustomAlert(`✅ ${count} jeux mis à jour (sauvegarde Firebase échouée)`);
-                    });
+                playSound('success');
+                showCustomAlert(`✅ ${count} jeux ont été mis à jour !`);
             }
         );
     });
@@ -3476,17 +3298,8 @@ window.addEventListener('DOMContentLoaded', () => {
             () => {
                 const count = applyFixedTime(time);
                 updateTimingStats();
-
-                // Sauvegarder dans Firebase
-                saveBoxesDataToFirebase()
-                    .then(() => {
-                        playSound('success');
-                        showCustomAlert(`✅ ${count} jeux ont été mis à jour à ${time}s et sauvegardés !`);
-                    })
-                    .catch(() => {
-                        playSound('success');
-                        showCustomAlert(`✅ ${count} jeux mis à jour à ${time}s (sauvegarde Firebase échouée)`);
-                    });
+                playSound('success');
+                showCustomAlert(`✅ ${count} jeux ont été mis à jour à ${time}s !`);
             }
         );
     });
@@ -3510,10 +3323,9 @@ function resetGameState() {
     gameState.currentGameIndex = 0;
     gameState.totalScore = 0;
     gameState.gameScore = 0;
-    gameState.attempts = 1;
+    gameState.attempts = 3;
     gameState.boxesUnlocked = 0;
     gameState.pauseLifted = false;
-    gameState.skipQuestionUsed = false;
     gameState.stats = { gamesWon: 0, gamesLost: 0, totalTime: 0, startTime: Date.now(), endTime: null };
     gameState.currentAnswer = null;
 
@@ -3847,8 +3659,7 @@ function renderBoxes() {
         const isCurrent = gameState.boxesUnlocked === index;
 
         const boxElement = document.createElement('div');
-        // Ne pas rendre cliquable les coffres déjà déverrouillés
-        boxElement.className = `${isUnlocked ? 'unlocked-box' : 'locked-box'} ${isCurrent ? 'cursor-pointer' : isUnlocked ? '' : ''} transition-all duration-500 bounce-in`;
+        boxElement.className = `${isUnlocked ? 'unlocked-box' : 'locked-box'} cursor-pointer transition-all duration-500 bounce-in`;
         boxElement.style.animationDelay = `${index * 0.1}s`;
 
         // Utiliser un coffre-fort pour les coffres pairs, un coffre au trésor pour les impairs
@@ -3887,17 +3698,16 @@ function renderBoxes() {
             </div>
         `;
 
-        // Seulement le coffre actuel est cliquable (pas les déverrouillés)
-        if (isCurrent) {
+        if (isCurrent || isUnlocked) {
             boxElement.addEventListener('click', () => {
                 // Vérifier si on est en pause AVANT de permettre de jouer
-                const isPausedNow = gameState.boxesUnlocked < boxesData.length && gameState.boxesUnlocked > 0 && !gameState.pauseLifted;
+                const isPausedNow = gameState.boxesUnlocked % 2 === 0 && gameState.boxesUnlocked > 0 && gameState.boxesUnlocked < boxesData.length && !gameState.pauseLifted;
 
                 if (isPausedNow && index === gameState.boxesUnlocked) {
                     // On est en pause et on essaie de cliquer sur le coffre suivant
                     console.log('🚫 Clic bloqué - En pause à l\'étape', gameState.boxesUnlocked);
                     playSound('wrong');
-                    showCustomAlert('⏸️ Le jeu est en pause ! Cliquez sur "Continuer" sur l\'écran de pause.');
+                    showCustomAlert('⏸️ Le jeu est en pause ! Attendez que le formateur reprenne le jeu.');
                     // Afficher l'écran de pause au cas où l'utilisateur serait revenu aux coffres manuellement
                     const stageNumber = gameState.boxesUnlocked;
                     showStagePauseScreen(stageNumber);
@@ -3971,18 +3781,6 @@ function loadBoxGame() {
     container.className = 'glass-morphism rounded-3xl shadow-2xl p-6 md:p-8 bounce-in';
 
     document.getElementById('reset-answer-btn').classList.add('hidden');
-
-    // Réinitialiser le bouton "Passer" si déjà utilisé
-    const skipBtn = document.getElementById('skip-question-btn');
-    if (gameState.skipQuestionUsed) {
-        skipBtn.disabled = true;
-        skipBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        skipBtn.innerHTML = '⏭️ Utilisé';
-    } else {
-        skipBtn.disabled = false;
-        skipBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        skipBtn.innerHTML = '⏭️ Passer';
-    }
 
     switch(game.type) {
         case 'quiz':
@@ -4873,27 +4671,6 @@ function setupValidation(validateFunction) {
         }
     };
 
-    // Bouton "Passer la question" - utilisable une seule fois
-    document.getElementById('skip-question-btn').onclick = () => {
-        if (gameState.skipQuestionUsed) {
-            showCustomAlert('Vous avez déjà utilisé votre passe !');
-            return;
-        }
-
-        playSound('tick');
-        gameState.skipQuestionUsed = true;
-
-        // Désactiver le bouton visuellement
-        const skipBtn = document.getElementById('skip-question-btn');
-        skipBtn.disabled = true;
-        skipBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        skipBtn.innerHTML = '⏭️ Utilisé';
-
-        // Passer à la question suivante sans donner de points
-        stopTimer();
-        moveToNextGame();
-    };
-
     document.getElementById('reset-answer-btn').onclick = () => {
         playSound('tick');
         gameState.currentAnswer = null;
@@ -4932,6 +4709,20 @@ function setupValidation(validateFunction) {
 
         updateGameDisplay();
         startTimer();
+    };
+
+    document.getElementById('skip-question-btn').onclick = () => {
+        playSound('tick');
+
+        // Passer à la question suivante sans donner de points
+        stopTimer();
+        gameState.stats.gamesLost++;  // Compter comme question ratée
+        showFeedback('⏭️ Question passée', 'error');
+
+        setTimeout(() => {
+            gameState.currentGameIndex++;
+            loadBoxGame();
+        }, 1500);
     };
 }
 
