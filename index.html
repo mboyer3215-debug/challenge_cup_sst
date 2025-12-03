@@ -430,8 +430,8 @@
                             <div class="text-sm text-gray-600 dark:text-gray-400">Secondes</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl" id="attempts-display">❤️❤️❤️</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400">Essais</div>
+                            <div class="text-2xl" id="attempts-display">❤️</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Essai</div>
                         </div>
                     </div>
                 </div>
@@ -2103,8 +2103,8 @@ const gameState = {
     currentVariationIndex: 0, // Index de la variation actuelle (pour recharger la même après reset)
     totalScore: 0,
     gameScore: 0,
-    attempts: 3,
-    maxAttempts: 3,
+    attempts: 1,
+    maxAttempts: 1,
     timeLeft: 60,
     timerInterval: null,
     boxesUnlocked: 0,
@@ -3334,7 +3334,7 @@ function resetGameState() {
     gameState.currentGameIndex = 0;
     gameState.totalScore = 0;
     gameState.gameScore = 0;
-    gameState.attempts = 3;
+    gameState.attempts = 1;
     gameState.boxesUnlocked = 0;
     gameState.pauseLifted = false;
     gameState.stats = { gamesWon: 0, gamesLost: 0, totalTime: 0, startTime: Date.now(), endTime: null };
@@ -4777,10 +4777,8 @@ function validateAnswer(isCorrect) {
         const timeBonus = Math.floor((gameState.timeLeft / timeLimit) * 50);
 
         // 2. Bonus d'essais (0-50 points): points en fonction des tentatives restantes
-        // 3 essais restants = 50pts, 2 essais = 30pts, 1 essai = 10pts, 0 essai = 0pts
-        const attemptsBonus = gameState.attempts === 3 ? 50 :
-                             gameState.attempts === 2 ? 30 :
-                             gameState.attempts === 1 ? 10 : 0;
+        // 1 essai restant = 50pts, 0 essai = 0pts (réussite du premier coup)
+        const attemptsBonus = gameState.attempts === 1 ? 50 : 0;
 
         // Total des points
         const points = basePoints + timeBonus + attemptsBonus;
